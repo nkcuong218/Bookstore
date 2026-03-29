@@ -1,7 +1,7 @@
 import { Box, Container, Typography, Grid, Button } from '@mui/material'
 import BookCard from '../../components/BookCard/BookCard'
 
-import { mockBooks, mockGenres } from '../../apis/mock-data'
+import { mockBooks, mockGenres } from '../../apis/mock-data-vn'
 
 const HomePage = () => {
   return (
@@ -64,7 +64,13 @@ const HomePage = () => {
         <Grid container spacing={3} justifyContent="center">
           {mockBooks.map((book) => (
             <Grid item key={book.id}>
-              <BookCard title={book.title} author={book.author} price={book.price} coverUrl={book.coverUrl} />
+              <BookCard 
+                id={book.id}
+                title={book.title} 
+                author={book.author} 
+                price={book.price} 
+                coverUrl={book.coverUrl} 
+              />
             </Grid>
           ))}
         </Grid>

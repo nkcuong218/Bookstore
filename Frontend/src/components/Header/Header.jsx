@@ -8,7 +8,7 @@ import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined'
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
-import { mockNavItems } from '../../apis/mock-data'
+import { mockNavItems } from '../../apis/mock-data-vn'
 
 const Header = () => {
   const [anchorEl, setAnchorEl] = useState(null)
@@ -60,15 +60,19 @@ const Header = () => {
 
       {/* Top bar */}
       <Box sx={{ bgcolor: 'primary.main', color: 'white', textAlign: 'center', py: 0.5, fontSize: '0.8rem' }}>
-        Free Shipping on Orders Over $40
+        Miễn phí vận chuyển cho đơn hàng trên 800.000đ
       </Box>
 
       {/* Main Header */}
       <Container maxWidth="xl" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
 
         {/* Logo */}
-        <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', cursor: 'pointer' }}>
-          Bookstore
+        <Typography 
+          variant="h4" 
+          onClick={() => navigate('/')}
+          sx={{ fontWeight: 'bold', color: 'primary.main', cursor: 'pointer' }}
+        >
+          Nhà sách
         </Typography>
 
         {/* Search */}
@@ -81,7 +85,7 @@ const Header = () => {
           borderRadius: '4px',
           overflow: 'hidden'
         }}>
-          <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Search books..." />
+          <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Tìm kiếm sách..." />
           <Box sx={{ bgcolor: 'primary.main', px: 2, display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
             <SearchIcon sx={{ color: 'white' }} />
           </Box>
@@ -94,7 +98,7 @@ const Header = () => {
           <IconButton onClick={handleClick} sx={{ color: 'text.primary', flexDirection: 'column' }}>
             <PersonOutlineOutlinedIcon />
             <Typography variant="body2">
-              {isLoggedIn ? currentUser?.username : 'Account'}
+              {isLoggedIn ? currentUser?.username : 'Tài khoản'}
             </Typography>
           </IconButton>
 
@@ -146,12 +150,15 @@ const Header = () => {
           {/* Wishlist */}
           <IconButton sx={{ color: 'text.primary', flexDirection: 'column' }}>
             <FavoriteBorderOutlinedIcon />
-            <Typography variant="body2">Wishlist</Typography>
+            <Typography variant="body2">Yêu thích</Typography>
           </IconButton>
 
           {/* Cart */}
-          <IconButton sx={{ color: 'text.primary' }}>
-            <Badge badgeContent={0} color="secondary">
+          <IconButton 
+            onClick={() => navigate('/cart')}
+            sx={{ color: 'text.primary' }}
+          >
+            <Badge badgeContent={3} color="secondary">
               <ShoppingCartOutlinedIcon />
             </Badge>
           </IconButton>
@@ -162,8 +169,18 @@ const Header = () => {
       {/* Nav */}
       <Box sx={{ borderTop: '1px solid #e0e0e0', py: 1 }}>
         <Container maxWidth="xl" sx={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-          {mockNavItems.map((item) => (
-            <Typography key={item} sx={{ cursor: 'pointer', fontWeight: 600, '&:hover': { color: 'primary.main' } }}>
+          {['Sách', 'Sách điện tử', 'Sách nói', 'Thanh thiếu niên', 'Thiếu nhi'].map((item) => (
+            <Typography 
+              key={item} 
+              onClick={() => {
+                if (item === 'Sách') {
+                  navigate('/books')
+                } else {
+                  navigate('/')
+                }
+              }}
+              sx={{ cursor: 'pointer', fontWeight: 600, '&:hover': { color: 'primary.main' } }}
+            >
               {item}
             </Typography>
           ))}

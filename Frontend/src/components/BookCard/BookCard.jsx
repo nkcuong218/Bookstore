@@ -1,6 +1,14 @@
 import { Box, Card, CardContent, CardMedia, Typography, Button } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { formatPrice } from '../../utils/formatPrice'
 
-const BookCard = ({ title, author, price, coverUrl }) => {
+const BookCard = ({ id, title, author, price, coverUrl }) => {
+  const navigate = useNavigate()
+
+  const handleCardClick = () => {
+    navigate(`/books/${id}`)
+  }
+
   return (
     <Card sx={{ 
       maxWidth: 220, 
@@ -9,6 +17,7 @@ const BookCard = ({ title, author, price, coverUrl }) => {
       backgroundColor: 'transparent',
       transition: 'transform 0.2s',
       position: 'relative',
+      cursor: 'pointer',
       '&:hover': { 
         transform: 'translateY(-4px)' 
       },
@@ -16,7 +25,10 @@ const BookCard = ({ title, author, price, coverUrl }) => {
         opacity: 1
       }
     }}>
-      <Box sx={{ position: 'relative', overflow: 'hidden', mb: 1, borderRadius: '4px', bgcolor: '#f0f0f0', aspectRatio: '2/3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Box 
+        onClick={handleCardClick}
+        sx={{ position: 'relative', overflow: 'hidden', mb: 1, borderRadius: '4px', bgcolor: '#f0f0f0', aspectRatio: '2/3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
         {coverUrl ? (
           <CardMedia
             component="img"
@@ -25,12 +37,16 @@ const BookCard = ({ title, author, price, coverUrl }) => {
             sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
-          <Typography variant="body2" color="text.secondary">No Cover</Typography>
+          <Typography variant="body2" color="text.secondary">Không có ảnh</Typography>
         )}
         <Button 
           className="quick-add-btn"
           variant="contained" 
           color="primary"
+          onClick={(e) => {
+            e.stopPropagation()
+            // Handle quick add to cart
+          }}
           sx={{ 
             position: 'absolute', 
             bottom: '10px', 
@@ -42,10 +58,13 @@ const BookCard = ({ title, author, price, coverUrl }) => {
             boxShadow: 2
           }}
         >
-          QUICK ADD
+          THÊM NHANH
         </Button>
       </Box>
-      <CardContent sx={{ p: '0 !important', textAlign: 'center' }}>
+      <CardContent 
+        onClick={handleCardClick}
+        sx={{ p: '0 !important', textAlign: 'center' }}
+      >
         <Typography variant="subtitle1" component="div" sx={{ fontFamily: '"Georgia", serif', fontWeight: 'bold', lineHeight: 1.2, minHeight: '2.4em', mb: 0.5 }}>
           {title}
         </Typography>
@@ -53,7 +72,7 @@ const BookCard = ({ title, author, price, coverUrl }) => {
           {author}
         </Typography>
         <Typography variant="body1" color="text.primary" sx={{ fontWeight: 'bold' }}>
-          {price}
+          {typeof price === 'number' ? formatPrice(price) : price}
         </Typography>
       </CardContent>
     </Card>
