@@ -1,14 +1,7 @@
 import { Box, Container, Typography, Grid, Button } from '@mui/material'
 import BookCard from '../../components/BookCard/BookCard'
 
-const mockBooks = [
-  { id: 1, title: 'Fourth Wing', author: 'Rebecca Yarros', price: '$20.99' },
-  { id: 2, title: 'Iron Flame', author: 'Rebecca Yarros', price: '$22.49' },
-  { id: 3, title: 'The Silent Patient', author: 'Alex Michaelides', price: '$14.99' },
-  { id: 4, title: 'Atomic Habits', author: 'James Clear', price: '$13.98' },
-  { id: 5, title: 'A Court of Thorns and Roses', author: 'Sarah J. Maas', price: '$15.30' },
-  { id: 6, title: 'The Alchemist', author: 'Paulo Coelho', price: '$11.99' }
-]
+import { mockBooks, mockGenres } from '../../apis/mock-data'
 
 const HomePage = () => {
   return (
@@ -37,7 +30,7 @@ const HomePage = () => {
       {/* Genres Row */}
       <Container maxWidth="xl" sx={{ my: 6 }}>
         <Grid container spacing={2} justifyContent="center">
-          {['Fiction', 'Nonfiction', 'Mystery', 'Romance', 'Sci-Fi & Fantasy', 'Teens', 'Kids'].map((genre) => (
+          {mockGenres.map((genre) => (
             <Grid item key={genre}>
               <Box sx={{ 
                 width: 100, height: 100, 
@@ -71,7 +64,7 @@ const HomePage = () => {
         <Grid container spacing={3} justifyContent="center">
           {mockBooks.map((book) => (
             <Grid item key={book.id}>
-              <BookCard title={book.title} author={book.author} price={book.price} />
+              <BookCard title={book.title} author={book.author} price={book.price} coverUrl={book.coverUrl} />
             </Grid>
           ))}
         </Grid>

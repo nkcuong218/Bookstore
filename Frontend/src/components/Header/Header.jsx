@@ -1,5 +1,5 @@
-import { 
-  Box, Container, IconButton, InputBase, Typography, Badge, Menu, MenuItem, Button 
+import {
+  Box, Container, IconButton, InputBase, Typography, Badge, Menu, MenuItem, Button
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -8,6 +8,7 @@ import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined'
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
+import { mockNavItems } from '../../apis/mock-data'
 
 const Header = () => {
   const [anchorEl, setAnchorEl] = useState(null)
@@ -56,7 +57,7 @@ const Header = () => {
 
   return (
     <Box sx={{ width: '100%', bgcolor: 'background.paper', borderBottom: '1px solid #e0e0e0' }}>
-      
+
       {/* Top bar */}
       <Box sx={{ bgcolor: 'primary.main', color: 'white', textAlign: 'center', py: 0.5, fontSize: '0.8rem' }}>
         Free Shipping on Orders Over $40
@@ -64,10 +65,10 @@ const Header = () => {
 
       {/* Main Header */}
       <Container maxWidth="xl" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
-        
+
         {/* Logo */}
         <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', cursor: 'pointer' }}>
-          Bookstore.
+          Bookstore
         </Typography>
 
         {/* Search */}
@@ -88,7 +89,7 @@ const Header = () => {
 
         {/* Icons */}
         <Box sx={{ display: 'flex', gap: 2 }}>
-          
+
           {/* ACCOUNT */}
           <IconButton onClick={handleClick} sx={{ color: 'text.primary', flexDirection: 'column' }}>
             <PersonOutlineOutlinedIcon />
@@ -123,17 +124,17 @@ const Header = () => {
                 <Typography variant="body1" sx={{ mb: 2, textAlign: 'center' }}>
                   Vui lòng đăng nhập
                 </Typography>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
+                <Button
+                  fullWidth
+                  variant="contained"
                   onClick={handleLogin}
                   sx={{ mb: 1 }}
                 >
                   Đăng nhập
                 </Button>
-                <Button 
-                  fullWidth 
-                  variant="outlined" 
+                <Button
+                  fullWidth
+                  variant="outlined"
                   onClick={handleRegister}
                 >
                   Đăng ký
@@ -161,7 +162,7 @@ const Header = () => {
       {/* Nav */}
       <Box sx={{ borderTop: '1px solid #e0e0e0', py: 1 }}>
         <Container maxWidth="xl" sx={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-          {['Books', 'eBooks', 'Audiobooks', 'Teens & YA', 'Kids', 'Toys & Games', 'Stationery & Gifts'].map((item) => (
+          {mockNavItems.map((item) => (
             <Typography key={item} sx={{ cursor: 'pointer', fontWeight: 600, '&:hover': { color: 'primary.main' } }}>
               {item}
             </Typography>

@@ -3,42 +3,25 @@ import FacebookIcon from '@mui/icons-material/Facebook'
 import TwitterIcon from '@mui/icons-material/Twitter'
 import InstagramIcon from '@mui/icons-material/Instagram'
 import PinterestIcon from '@mui/icons-material/Pinterest'
+import { mockFooterLinks } from '../../apis/mock-data'
 
 const Footer = () => {
   return (
     <Box sx={{ bgcolor: 'background.paper', color: 'text.secondary', pt: 6, pb: 4, mt: 'auto', borderTop: '1px solid #e0e0e0' }}>
       <Container maxWidth="xl">
         <Grid container spacing={4}>
-          <Grid item xs={12} sm={3}>
-            <Typography variant="h6" color="text.primary" gutterBottom>
-              B&N SERVICES
-            </Typography>
-            {['Affiliate Program', 'Publisher & Author Guidelines', 'B&N Membership'].map((text) => (
-              <Link href="#" color="inherit" display="block" variant="body2" sx={{ mb: 1, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }} key={text}>
-                {text}
-              </Link>
-            ))}
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <Typography variant="h6" color="text.primary" gutterBottom>
-              ABOUT US
-            </Typography>
-            {['About B&N', 'Careers', 'Barnes & Noble, Inc.'].map((text) => (
-              <Link href="#" color="inherit" display="block" variant="body2" sx={{ mb: 1, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }} key={text}>
-                {text}
-              </Link>
-            ))}
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <Typography variant="h6" color="text.primary" gutterBottom>
-              QUICK HELP
-            </Typography>
-            {['Help Center', 'Shipping & Delivery', 'Order Status', 'Returns'].map((text) => (
-              <Link href="#" color="inherit" display="block" variant="body2" sx={{ mb: 1, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }} key={text}>
-                {text}
-              </Link>
-            ))}
-          </Grid>
+          {mockFooterLinks.map((section, index) => (
+            <Grid item xs={12} sm={3} key={index}>
+              <Typography variant="h6" color="text.primary" gutterBottom>
+                {section.title}
+              </Typography>
+              {section.links.map((text) => (
+                <Link href="#" color="inherit" display="block" variant="body2" sx={{ mb: 1, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }} key={text}>
+                  {text}
+                </Link>
+              ))}
+            </Grid>
+          ))}
           <Grid item xs={12} sm={3}>
             <Typography variant="h6" color="text.primary" gutterBottom>
               CONNECT WITH US
