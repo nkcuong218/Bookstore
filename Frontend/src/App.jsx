@@ -9,6 +9,7 @@ import Register from './pages/Register/Register'
 import ListBook from './pages/ListBook/ListBook'
 import BookDetail from './pages/ListBook/BookDetail/BookDetail'
 import Cart from './pages/Cart/Cart'
+import WishList from './pages/WishList/WishList'
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/wishlist" element={<WishList />} />
           </Routes>
         </Box>
 

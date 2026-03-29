@@ -10,22 +10,22 @@ const BookCard = ({ id, title, author, price, coverUrl }) => {
   }
 
   return (
-    <Card sx={{ 
-      maxWidth: 220, 
-      boxShadow: 'none', 
+    <Card sx={{
+      maxWidth: 220,
+      boxShadow: 'none',
       border: 'none',
       backgroundColor: 'transparent',
       transition: 'transform 0.2s',
       position: 'relative',
       cursor: 'pointer',
-      '&:hover': { 
-        transform: 'translateY(-4px)' 
+      '&:hover': {
+        transform: 'translateY(-4px)'
       },
       '&:hover .quick-add-btn': {
         opacity: 1
       }
     }}>
-      <Box 
+      <Box
         onClick={handleCardClick}
         sx={{ position: 'relative', overflow: 'hidden', mb: 1, borderRadius: '4px', bgcolor: '#f0f0f0', aspectRatio: '2/3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
@@ -39,29 +39,52 @@ const BookCard = ({ id, title, author, price, coverUrl }) => {
         ) : (
           <Typography variant="body2" color="text.secondary">Không có ảnh</Typography>
         )}
-        <Button 
+        {/* Container ẩn hiện khi hover — chứa 2 nút xếp dọc */}
+        <Box
           className="quick-add-btn"
-          variant="contained" 
-          color="primary"
-          onClick={(e) => {
-            e.stopPropagation()
-            // Handle quick add to cart
-          }}
-          sx={{ 
-            position: 'absolute', 
-            bottom: '10px', 
-            left: '50%',
-            transform: 'translateX(-50%)',
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.5,
+            px: 1,
+            pb: 1,
             opacity: 0,
             transition: 'opacity 0.2s',
-            width: '80%',
-            boxShadow: 2
           }}
         >
-          THÊM NHANH
-        </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation()
+              // TODO: thêm vào giỏ hàng
+            }}
+            sx={{ boxShadow: 2, fontSize: '0.75rem', py: 0.6 }}
+          >
+            Thêm vào giỏ hàng
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            fullWidth
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation()
+              // TODO: thêm vào wishlist
+            }}
+            sx={{ boxShadow: 2, fontSize: '0.75rem', py: 0.6 }}
+          >
+            Thêm vào wishlist
+          </Button>
+        </Box>
       </Box>
-      <CardContent 
+      <CardContent
         onClick={handleCardClick}
         sx={{ p: '0 !important', textAlign: 'center' }}
       >

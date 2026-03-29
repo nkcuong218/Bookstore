@@ -148,7 +148,7 @@ const Header = () => {
           </Menu>
 
           {/* Wishlist */}
-          <IconButton sx={{ color: 'text.primary', flexDirection: 'column' }}>
+          <IconButton onClick={() => navigate('/wishlist')} sx={{ color: 'text.primary', flexDirection: 'column' }}>
             <FavoriteBorderOutlinedIcon />
             <Typography variant="body2">Yêu thích</Typography>
           </IconButton>
