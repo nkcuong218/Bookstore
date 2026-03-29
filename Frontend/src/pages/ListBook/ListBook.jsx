@@ -14,13 +14,9 @@ const ListBook = () => {
 
   // Sort books
   const sortedBooks = [...filteredBooks].sort((a, b) => {
-    if (sortBy === 'price-low') {
-      return parseFloat(a.price.replace('$', '')) - parseFloat(b.price.replace('$', ''))
-    } else if (sortBy === 'price-high') {
-      return parseFloat(b.price.replace('$', '')) - parseFloat(a.price.replace('$', ''))
-    } else if (sortBy === 'title') {
-      return a.title.localeCompare(b.title)
-    }
+    if (sortBy === 'price-low') return a.price - b.price
+    if (sortBy === 'price-high') return b.price - a.price
+    if (sortBy === 'title') return a.title.localeCompare(b.title)
     return 0
   })
 

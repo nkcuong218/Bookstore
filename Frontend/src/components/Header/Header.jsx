@@ -169,7 +169,7 @@ const Header = () => {
       {/* Nav */}
       <Box sx={{ borderTop: '1px solid #e0e0e0', py: 1 }}>
         <Container maxWidth="xl" sx={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-          {['Sách', 'Sách điện tử', 'Sách nói', 'Thanh thiếu niên', 'Thiếu nhi'].map((item) => (
+          {mockNavItems.map((item) => (
             <Typography 
               key={item} 
               onClick={() => {

@@ -8,37 +8,19 @@ import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
+import { mockBooks, mockCartItems } from '../../apis/mock-data-vn'
+import { formatPrice } from '../../utils/formatPrice'
 
 const Cart = () => {
   const navigate = useNavigate()
   
-  // Mock cart items (sau này sẽ lấy từ localStorage hoặc state management)
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      title: 'Cánh Rồng Thứ Tư',
-      author: 'Rebecca Yarros',
-      price: 420000,
-      quantity: 2,
-      coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200&h=300'
-    },
-    {
-      id: 4,
-      title: 'Thói Quen Nguyên Tử',
-      author: 'James Clear',
-      price: 279000,
-      quantity: 1,
-      coverUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=200&h=300'
-    },
-    {
-      id: 6,
-      title: 'Nhà Giả Kim',
-      author: 'Paulo Coelho',
-      price: 239000,
-      quantity: 1,
-      coverUrl: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=200&h=300'
-    }
-  ])
+  // Khởi tạo từ mockCartItems kết hợp với thông tin chi tiết từ mockBooks
+  const [cartItems, setCartItems] = useState(
+    mockCartItems.map(item => ({
+      ...mockBooks.find(b => b.id === item.id),
+      quantity: item.quantity
+    }))
+  )
 
   const handleQuantityChange = (id, action) => {
     setCartItems(prev => prev.map(item => {
@@ -65,9 +47,6 @@ const Cart = () => {
   const shippingFee = subtotal >= 800000 ? 0 : 30000
   const total = subtotal + shippingFee
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)
-  }
 
   if (cartItems.length === 0) {
     return (

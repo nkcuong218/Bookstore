@@ -289,6 +289,13 @@ export const mockBooks = [
   }
 ]
 
+// Dữ liệu mẫu cho giỏ hàng (dùng id từ mockBooks)
+export const mockCartItems = [
+  { id: 1, quantity: 2 },
+  { id: 4, quantity: 1 },
+  { id: 6, quantity: 1 }
+]
+
 export const mockGenres = [
   'Tiểu thuyết', 'Phi hư cấu', 'Trinh thám', 'Lãng mạn', 'Khoa học viễn tưởng & Fantasy', 'Thanh thiếu niên', 'Thiếu nhi'
 ]
