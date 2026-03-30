@@ -63,7 +63,13 @@ const Register = () => {
             }
         }
 
-        const user = { username, password, email, phone };
+        const user = { 
+            id: 'user-' + Date.now(),
+            username, 
+            password, 
+            email, 
+            phone 
+        };
 
         // Lưu vào localStorage
         localStorage.setItem("user", JSON.stringify(user));

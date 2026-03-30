@@ -45,6 +45,22 @@ const Login = () => {
             return;
         }
 
+        // Mock Admin account
+        if (username === 'admin' && password === 'admin123') {
+            localStorage.setItem("token", "admin-token-123");
+            localStorage.setItem("currentUser", JSON.stringify({ 
+                id: 'admin-001',
+                username: 'admin',
+                email: 'admin@bookstore.com',
+                role: 'admin',
+                password: 'admin123'
+            }));
+            alert("Đăng nhập Admin thành công!");
+            navigate("/admin/dashboard");
+            window.location.reload();
+            return;
+        }
+
         const storedUser = JSON.parse(localStorage.getItem("user"));
 
         if (!storedUser) {
@@ -57,7 +73,15 @@ const Login = () => {
             password === storedUser.password
         ) {
             localStorage.setItem("token", "fake-token-123");
-            localStorage.setItem("currentUser", JSON.stringify({ username: storedUser.username }));
+            localStorage.setItem("currentUser", JSON.stringify({ 
+                id: storedUser.id || 'user-' + Date.now(),
+                username: storedUser.username,
+                email: storedUser.email || '',
+                phone: storedUser.phone || '',
+                fullName: storedUser.fullName || '',
+                role: 'customer',
+                password: storedUser.password
+            }));
             alert("Đăng nhập thành công!");
             navigate("/");
             // Reload để cập nhật Header
@@ -108,6 +132,12 @@ const Login = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
+
+                        <Box sx={{ bgcolor: '#e3f2fd', p: 1.5, borderRadius: 1, border: '1px solid #90caf9' }}>
+                            <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
+                                💡 Tài khoản test: admin / admin123
+                            </Typography>
+                        </Box>
                         
                         <Button 
                             type="submit" 

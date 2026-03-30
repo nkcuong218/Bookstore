@@ -228,6 +228,7 @@ const Cart = () => {
                 variant="contained" 
                 fullWidth 
                 size="large"
+                onClick={() => navigate('/checkout', { state: { cartItems } })}
                 sx={{ py: 1.5, fontSize: '1.1rem', mb: 2 }}
               >
                 Thanh toán

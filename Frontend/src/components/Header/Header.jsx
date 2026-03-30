@@ -116,8 +116,8 @@ const Header = () => {
                     Xin chào, {currentUser?.username}
                   </Typography>
                 </MenuItem>
-                <MenuItem onClick={handleClose}>Hồ sơ của tôi</MenuItem>
-                <MenuItem onClick={handleClose}>Đơn hàng của tôi</MenuItem>
+                <MenuItem onClick={() => { handleClose(); navigate('/profile'); }}>Hồ sơ của tôi</MenuItem>
+                <MenuItem onClick={() => { handleClose(); navigate('/my-orders'); }}>Đơn hàng của tôi</MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
                   Đăng xuất
