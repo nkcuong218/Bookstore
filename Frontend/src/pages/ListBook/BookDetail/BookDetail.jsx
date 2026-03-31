@@ -11,6 +11,8 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import BookCard from '../../../components/BookCard/BookCard'
 import { formatPrice } from '../../../utils/formatPrice'
 import bookService from '../../../apis/bookService'
+import authService from '../../../apis/authService'
+import wishlistService from '../../../apis/wishlistService'
 
 const BookDetail = () => {
   const { id } = useParams()
@@ -27,6 +29,17 @@ const BookDetail = () => {
       try {
         const detail = await bookService.getBookById(id)
         setBook(detail)
+
+        if (authService.isAuthenticated('customer')) {
+          try {
+            const containsResponse = await wishlistService.containsBook(detail.id)
+            setIsFavorite(!!containsResponse?.exists)
+          } catch {
+            setIsFavorite(false)
+          }
+        } else {
+          setIsFavorite(false)
+        }
 
         const listResponse = await bookService.getBooks({
           genre: detail.genre,
@@ -48,6 +61,30 @@ const BookDetail = () => {
 
     fetchBookData()
   }, [id])
+
+  const handleToggleWishlist = async () => {
+    if (!book) return
+
+    if (!authService.isAuthenticated('customer')) {
+      alert('Vui lòng đăng nhập để dùng wishlist!')
+      navigate('/login')
+      return
+    }
+
+    try {
+      if (isFavorite) {
+        await wishlistService.removeFromWishlist(book.id)
+        setIsFavorite(false)
+        alert('Đã xóa khỏi danh sách yêu thích!')
+      } else {
+        await wishlistService.addToWishlist(book.id)
+        setIsFavorite(true)
+        alert('Đã thêm vào danh sách yêu thích!')
+      }
+    } catch (error) {
+      alert(error.message || 'Không thể cập nhật wishlist')
+    }
+  }
 
   const handleAddToCart = () => {
     if (!book) return
@@ -241,7 +278,7 @@ const BookDetail = () => {
                 <Button
                   variant="outlined"
                   size="large"
-                  onClick={() => setIsFavorite(!isFavorite)}
+                  onClick={handleToggleWishlist}
                   sx={{ minWidth: 60 }}
                 >
                   {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}

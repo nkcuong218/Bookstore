@@ -2,41 +2,175 @@ import {
   Box, Container, Typography, Grid, Button, Paper,
   Divider, Breadcrumbs, Link, Chip, Snackbar, Alert
 } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
-import { mockBooks } from '../../apis/mock-data-vn'
 import { formatPrice } from '../../utils/formatPrice'
+import authService from '../../apis/authService'
+import wishlistService from '../../apis/wishlistService'
 
 const WishList = () => {
   const navigate = useNavigate()
 
-  // Khởi tạo wishlist với 3 cuốn sách mẫu đầu tiên từ mockBooks
-  const [wishlistItems, setWishlistItems] = useState(
-    mockBooks.slice(0, 3).map(book => ({
-      ...book,
-      addedDate: new Date().toLocaleDateString('vi-VN')
-    }))
-  )
+  const [wishlistItems, setWishlistItems] = useState([])
+  const [loading, setLoading] = useState(true)
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
+
+  const mapWishlistItems = (items) => {
+    return (items || []).map((item) => ({
+      ...item.book,
+      wishlistItemId: item.id,
+      addedDate: item.addedAt ? new Date(item.addedAt).toLocaleDateString('vi-VN') : ''
+    }))
+  }
+
+  const loadWishlist = async () => {
+    if (!authService.isAuthenticated('customer')) {
+      setWishlistItems([])
+      setLoading(false)
+      return
+    }
+
+    try {
+      setLoading(true)
+      const response = await wishlistService.getMyWishlist()
+      setWishlistItems(mapWishlistItems(response))
+    } catch (error) {
+      showSnackbar(error.message || 'Không tải được danh sách yêu thích', 'error')
+      setWishlistItems([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadWishlist()
+
+    const handleWishlistUpdate = () => {
+      loadWishlist()
+    }
+
+    window.addEventListener('wishlist-updated', handleWishlistUpdate)
+    window.addEventListener('auth-changed', handleWishlistUpdate)
+
+    return () => {
+      window.removeEventListener('wishlist-updated', handleWishlistUpdate)
+      window.removeEventListener('auth-changed', handleWishlistUpdate)
+    }
+  }, [])
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity })
   }
 
-  const handleRemove = (id) => {
-    setWishlistItems(prev => prev.filter(item => item.id !== id))
-    showSnackbar('Đã xóa khỏi danh sách yêu thích', 'info')
+  const handleRemove = async (bookId) => {
+    try {
+      await wishlistService.removeFromWishlist(bookId)
+      setWishlistItems(prev => prev.filter(item => item.id !== bookId))
+      showSnackbar('Đã xóa khỏi danh sách yêu thích', 'info')
+    } catch (error) {
+      showSnackbar(error.message || 'Xóa khỏi wishlist thất bại', 'error')
+    }
   }
 
   const handleAddToCart = (book) => {
+    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]')
+    const foundItem = existingCart.find((item) => item.id === book.id)
+
+    let nextCart
+    if (foundItem) {
+      nextCart = existingCart.map((item) =>
+        item.id === book.id ? { ...item, quantity: item.quantity + 1 } : item
+      )
+    } else {
+      nextCart = [
+        ...existingCart,
+        {
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          price: book.price,
+          coverUrl: book.coverUrl,
+          quantity: 1
+        }
+      ]
+    }
+
+    localStorage.setItem('cart', JSON.stringify(nextCart))
+    window.dispatchEvent(new Event('cart-updated'))
     showSnackbar(`Đã thêm "${book.title}" vào giỏ hàng!`, 'success')
   }
 
   const handleMoveAllToCart = () => {
+    if (wishlistItems.length === 0) return
+
+    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]')
+    let nextCart = [...existingCart]
+
+    wishlistItems.forEach((book) => {
+      const foundItem = nextCart.find((item) => item.id === book.id)
+
+      if (foundItem) {
+        nextCart = nextCart.map((item) =>
+          item.id === book.id ? { ...item, quantity: item.quantity + 1 } : item
+        )
+      } else {
+        nextCart.push({
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          price: book.price,
+          coverUrl: book.coverUrl,
+          quantity: 1
+        })
+      }
+    })
+
+    localStorage.setItem('cart', JSON.stringify(nextCart))
+    window.dispatchEvent(new Event('cart-updated'))
     showSnackbar(`Đã thêm ${wishlistItems.length} sách vào giỏ hàng!`, 'success')
+  }
+
+  if (loading) {
+    return (
+      <Box sx={{ bgcolor: '#f9f9f9', minHeight: '100vh', py: 8 }}>
+        <Container maxWidth="xl">
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary">
+              Đang tải danh sách yêu thích...
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
+    )
+  }
+
+  if (!authService.isAuthenticated('customer')) {
+    return (
+      <Box sx={{ bgcolor: '#f9f9f9', minHeight: '100vh', py: 8 }}>
+        <Container maxWidth="xl">
+          <Box sx={{ textAlign: 'center', py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <FavoriteBorderIcon sx={{ fontSize: 100, color: '#e0e0e0' }} />
+            <Typography variant="h4" sx={{ color: 'text.secondary' }}>
+              Bạn chưa đăng nhập
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Đăng nhập để xem danh sách yêu thích của bạn.
+            </Typography>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => navigate('/login')}
+              sx={{ px: 4, mt: 1 }}
+            >
+              Đăng nhập
+            </Button>
+          </Box>
+        </Container>
+      </Box>
+    )
   }
 
   // Empty state

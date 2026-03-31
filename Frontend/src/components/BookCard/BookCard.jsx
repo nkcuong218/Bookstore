@@ -1,6 +1,8 @@
 import { Box, Card, CardContent, CardMedia, Typography, Button } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { formatPrice } from '../../utils/formatPrice'
+import authService from '../../apis/authService'
+import wishlistService from '../../apis/wishlistService'
 
 const BookCard = ({ id, title, author, price, coverUrl }) => {
   const navigate = useNavigate()
@@ -28,6 +30,21 @@ const BookCard = ({ id, title, author, price, coverUrl }) => {
 
   const handleCardClick = () => {
     navigate(`/books/${id}`)
+  }
+
+  const handleAddToWishlist = async () => {
+    if (!authService.isAuthenticated('customer')) {
+      alert('Vui lòng đăng nhập để thêm vào danh sách yêu thích!')
+      navigate('/login')
+      return
+    }
+
+    try {
+      await wishlistService.addToWishlist(id)
+      alert('Đã thêm vào danh sách yêu thích!')
+    } catch (error) {
+      alert(error.message || 'Không thể thêm vào wishlist')
+    }
   }
 
   return (
@@ -97,7 +114,7 @@ const BookCard = ({ id, title, author, price, coverUrl }) => {
             size="small"
             onClick={(e) => {
               e.stopPropagation()
-              // TODO: thêm vào wishlist
+              handleAddToWishlist()
             }}
             sx={{ boxShadow: 2, fontSize: '0.75rem', py: 0.6 }}
           >
