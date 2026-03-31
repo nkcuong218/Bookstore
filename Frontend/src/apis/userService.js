@@ -1,4 +1,5 @@
 import apiClient from './apiClient'
+import authService from './authService'
 
 const userService = {
   /**
@@ -18,13 +19,12 @@ const userService = {
     const response = await apiClient.put('/api/profile', data)
 
     // Cập nhật localStorage nếu thành công
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
-    localStorage.setItem('currentUser', JSON.stringify({
-      ...currentUser,
+    const currentUser = authService.getCurrentUser('customer') || {}
+    authService.updateCurrentUser({
       username: response.fullName || currentUser.username,
       phone: response.phone || currentUser.phone,
       address: response.address || currentUser.address
-    }))
+    }, 'customer')
 
     return response
   },

@@ -23,8 +23,8 @@ const Header = () => {
 
   useEffect(() => {
     const refreshHeaderState = () => {
-      const user = authService.getCurrentUser()
-      setIsLoggedIn(authService.isAuthenticated())
+      const user = authService.getCurrentUser('customer')
+      setIsLoggedIn(authService.isAuthenticated('customer'))
       setCurrentUser(user)
 
       const cart = JSON.parse(localStorage.getItem('cart') || '[]')
@@ -34,10 +34,12 @@ const Header = () => {
 
     refreshHeaderState()
     window.addEventListener('cart-updated', refreshHeaderState)
+    window.addEventListener('auth-changed', refreshHeaderState)
     window.addEventListener('storage', refreshHeaderState)
 
     return () => {
       window.removeEventListener('cart-updated', refreshHeaderState)
+      window.removeEventListener('auth-changed', refreshHeaderState)
       window.removeEventListener('storage', refreshHeaderState)
     }
   }, [])
@@ -51,7 +53,7 @@ const Header = () => {
   }
 
   const handleLogout = () => {
-    authService.logout()
+    authService.logout('customer')
     setIsLoggedIn(false)
     setCurrentUser(null)
     handleClose()

@@ -1,5 +1,5 @@
 import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, AppBar, IconButton, Avatar, Menu, MenuItem } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Outlet, useLocation } from 'react-router-dom'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
@@ -7,6 +7,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import PeopleIcon from '@mui/icons-material/People'
 import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
+import authService from '../../apis/authService'
 
 const drawerWidth = 260
 
@@ -15,8 +16,21 @@ const AdminLayout = () => {
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [anchorEl, setAnchorEl] = useState(null)
+  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser('admin') || {})
 
-  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+  useEffect(() => {
+    const refreshAdminUser = () => {
+      setCurrentUser(authService.getCurrentUser('admin') || {})
+    }
+
+    window.addEventListener('auth-changed', refreshAdminUser)
+    window.addEventListener('storage', refreshAdminUser)
+
+    return () => {
+      window.removeEventListener('auth-changed', refreshAdminUser)
+      window.removeEventListener('storage', refreshAdminUser)
+    }
+  }, [])
 
   const menuItems = [
     { text: 'Tổng quan', icon: <DashboardIcon />, path: '/admin/dashboard' },
@@ -39,9 +53,8 @@ const AdminLayout = () => {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('currentUser')
-    navigate('/login')
+    authService.logout('admin')
+    navigate('/admin/login')
   }
 
   const drawer = (

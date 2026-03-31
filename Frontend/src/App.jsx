@@ -1,4 +1,5 @@
 import { Box } from '@mui/material'
+import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 
 import Header from './components/Header/Header'
@@ -30,10 +31,23 @@ import authService from './apis/authService'
 
 // Protected Route Component
 const ProtectedAdminRoute = ({ children }) => {
-  const currentUser = authService.getCurrentUser() || {}
-  const isAdmin = currentUser.role === 'admin'
+  const [isAdmin, setIsAdmin] = useState(authService.isAdmin('admin'))
 
-  return isAdmin ? children : <Navigate to="/login" replace />
+  useEffect(() => {
+    const refreshAccess = () => {
+      setIsAdmin(authService.isAdmin('admin'))
+    }
+
+    window.addEventListener('auth-changed', refreshAccess)
+    window.addEventListener('storage', refreshAccess)
+
+    return () => {
+      window.removeEventListener('auth-changed', refreshAccess)
+      window.removeEventListener('storage', refreshAccess)
+    }
+  }, [])
+
+  return isAdmin ? children : <Navigate to="/admin/login" replace />
 }
 
 function App() {
@@ -135,11 +149,13 @@ function App() {
           <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <Header />
             <Box sx={{ flexGrow: 1 }}>
-              <Login />
+              <Login portal="customer" />
             </Box>
             <Footer />
           </Box>
         } />
+
+        <Route path="/admin/login" element={<Login portal="admin" />} />
 
         <Route path="/register" element={
           <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

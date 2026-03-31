@@ -41,7 +41,7 @@ const Register = () => {
       })
 
       alert('Đăng ký thành công! Vui lòng đăng nhập.')
-      authService.logout()
+      authService.logout('customer')
       navigate('/login')
     } catch (error) {
       alert(error.message || 'Đăng ký thất bại!')

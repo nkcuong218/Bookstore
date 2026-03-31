@@ -1,5 +1,16 @@
 import { API_ROOT } from '~/utils/constants'
 
+const getScopeFromPath = () => {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+    return 'admin'
+  }
+  return 'customer'
+}
+
+const getTokenKeyByScope = (scope) => {
+  return scope === 'admin' ? 'adminToken' : 'token'
+}
+
 class ApiClient {
   constructor(baseURL) {
     this.baseURL = baseURL
@@ -7,17 +18,24 @@ class ApiClient {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`
-    const token = localStorage.getItem('token')
+    const {
+      skipAuth,
+      authScope,
+      ...requestOptions
+    } = options
+
+    const scope = authScope || getScopeFromPath()
+    const token = localStorage.getItem(getTokenKeyByScope(scope))
 
     const config = {
-      ...options,
+      ...requestOptions,
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers
+        ...requestOptions.headers
       }
     }
 
-    if (token && !options.skipAuth) {
+    if (token && !skipAuth) {
       config.headers['Authorization'] = `Bearer ${token}`
     }
 

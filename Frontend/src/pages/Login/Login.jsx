@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Box,
   Container,
@@ -10,10 +10,15 @@ import {
 } from '@mui/material'
 import authService from '../../apis/authService'
 
-const Login = () => {
+const Login = ({ portal = 'customer' }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const authScope = portal === 'admin' || location.pathname.startsWith('/admin')
+    ? 'admin'
+    : 'customer'
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -24,10 +29,31 @@ const Login = () => {
     }
 
     try {
-      const response = await authService.login({ email, password })
+      const response = await authService.login({ email, password }, authScope)
+      const isAdminRole = authService.isAdminRole(response?.role)
+
+      if (authScope === 'admin') {
+        if (!isAdminRole) {
+          authService.logout('admin')
+          alert('Tài khoản này không có quyền quản trị!')
+          return
+        }
+
+        alert('Đăng nhập thành công!')
+        navigate('/admin/dashboard')
+        return
+      }
+
+      if (isAdminRole) {
+        authService.logout('customer')
+        authService.setSession(response, 'admin')
+        alert('Đăng nhập thành công!')
+        navigate('/admin/dashboard')
+        return
+      }
+
       alert('Đăng nhập thành công!')
-      navigate(response?.role === 'admin' ? '/admin/dashboard' : '/')
-      window.location.reload()
+      navigate('/')
     } catch (error) {
       alert(error.message || 'Đăng nhập thất bại!')
     }
