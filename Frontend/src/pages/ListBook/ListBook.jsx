@@ -1,24 +1,61 @@
 import { Box, Container, Typography, Grid, Chip, FormControl, Select, MenuItem } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import BookCard from '../../components/BookCard/BookCard'
-import { mockBooks, mockGenres } from '../../apis/mock-data-vn'
+import bookService from '../../apis/bookService'
 
 const ListBook = () => {
   const [selectedGenre, setSelectedGenre] = useState('All')
   const [sortBy, setSortBy] = useState('featured')
+  const [books, setBooks] = useState([])
+  const [genres, setGenres] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  // Filter books by genre
-  const filteredBooks = selectedGenre === 'All' 
-    ? mockBooks 
-    : mockBooks.filter(book => book.genre === selectedGenre)
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        const data = await bookService.getGenres()
+        setGenres(data || [])
+      } catch {
+        setGenres([])
+      }
+    }
 
-  // Sort books
-  const sortedBooks = [...filteredBooks].sort((a, b) => {
-    if (sortBy === 'price-low') return a.price - b.price
-    if (sortBy === 'price-high') return b.price - a.price
-    if (sortBy === 'title') return a.title.localeCompare(b.title)
-    return 0
-  })
+    fetchGenres()
+  }, [])
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      setLoading(true)
+      try {
+        const sortMap = {
+          featured: 'newest',
+          'price-low': 'price_asc',
+          'price-high': 'price_desc',
+          title: 'newest'
+        }
+
+        const response = await bookService.getBooks({
+          genre: selectedGenre === 'All' ? undefined : selectedGenre,
+          page: 0,
+          size: 100,
+          sortBy: sortMap[sortBy] || 'newest'
+        })
+
+        const items = response?.content || []
+        const finalItems = sortBy === 'title'
+          ? [...items].sort((a, b) => a.title.localeCompare(b.title))
+          : items
+
+        setBooks(finalItems)
+      } catch {
+        setBooks([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBooks()
+  }, [selectedGenre, sortBy])
 
   return (
     <Box sx={{ bgcolor: '#f9f9f9', minHeight: '100vh', py: 4 }}>
@@ -29,16 +66,16 @@ const ListBook = () => {
             All Books
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Discover our collection of {filteredBooks.length} amazing books
+            Discover our collection of {books.length} amazing books
           </Typography>
         </Box>
 
         {/* Filters Section */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          mb: 4, 
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 4,
           flexWrap: 'wrap',
           gap: 2,
           bgcolor: 'white',
@@ -48,14 +85,14 @@ const ListBook = () => {
         }}>
           {/* Genre Filters */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip 
-              label="All" 
+            <Chip
+              label="All"
               onClick={() => setSelectedGenre('All')}
               color={selectedGenre === 'All' ? 'primary' : 'default'}
               sx={{ fontWeight: selectedGenre === 'All' ? 'bold' : 'normal' }}
             />
-            {mockGenres.map((genre) => (
-              <Chip 
+            {genres.map((genre) => (
+              <Chip
                 key={genre}
                 label={genre}
                 onClick={() => setSelectedGenre(genre)}
@@ -85,16 +122,22 @@ const ListBook = () => {
         </Box>
 
         {/* Books Grid */}
-        {sortedBooks.length > 0 ? (
+        {loading ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary">
+              Đang tải danh sách sách...
+            </Typography>
+          </Box>
+        ) : books.length > 0 ? (
           <Grid container spacing={3}>
-            {sortedBooks.map((book) => (
+            {books.map((book) => (
               <Grid item xs={12} sm={6} md={4} lg={2.4} key={book.id}>
-                <BookCard 
+                <BookCard
                   id={book.id}
-                  title={book.title} 
-                  author={book.author} 
-                  price={book.price} 
-                  coverUrl={book.coverUrl} 
+                  title={book.title}
+                  author={book.author}
+                  price={book.price}
+                  coverUrl={book.coverUrl}
                 />
               </Grid>
             ))}
@@ -111,4 +154,4 @@ const ListBook = () => {
   )
 }
 
-export default ListBook    
+export default ListBook

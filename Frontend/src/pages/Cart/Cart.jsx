@@ -1,29 +1,38 @@
-import { 
-  Box, Container, Typography, Grid, Button, Paper, IconButton, Divider, Breadcrumbs, Link 
+import {
+  Box, Container, Typography, Grid, Button, Paper, IconButton, Divider, Breadcrumbs, Link
 } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
-import { mockBooks, mockCartItems } from '../../apis/mock-data-vn'
 import { formatPrice } from '../../utils/formatPrice'
 
 const Cart = () => {
   const navigate = useNavigate()
-  
-  // Khởi tạo từ mockCartItems kết hợp với thông tin chi tiết từ mockBooks
-  const [cartItems, setCartItems] = useState(
-    mockCartItems.map(item => ({
-      ...mockBooks.find(b => b.id === item.id),
-      quantity: item.quantity
-    }))
-  )
+  const [cartItems, setCartItems] = useState([])
+
+  useEffect(() => {
+    const loadCart = () => {
+      const storedCart = JSON.parse(localStorage.getItem('cart') || '[]')
+      setCartItems(storedCart)
+    }
+
+    loadCart()
+    window.addEventListener('cart-updated', loadCart)
+    return () => window.removeEventListener('cart-updated', loadCart)
+  }, [])
+
+  const syncCart = (nextCart) => {
+    setCartItems(nextCart)
+    localStorage.setItem('cart', JSON.stringify(nextCart))
+    window.dispatchEvent(new Event('cart-updated'))
+  }
 
   const handleQuantityChange = (id, action) => {
-    setCartItems(prev => prev.map(item => {
+    const nextCart = cartItems.map(item => {
       if (item.id === id) {
         if (action === 'increase') {
           return { ...item, quantity: item.quantity + 1 }
@@ -32,11 +41,14 @@ const Cart = () => {
         }
       }
       return item
-    }))
+    })
+
+    syncCart(nextCart)
   }
 
   const handleRemoveItem = (id) => {
-    setCartItems(prev => prev.filter(item => item.id !== id))
+    const nextCart = cartItems.filter(item => item.id !== id)
+    syncCart(nextCart)
   }
 
   const calculateSubtotal = () => {
@@ -60,8 +72,8 @@ const Cart = () => {
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
               Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm
             </Typography>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               size="large"
               onClick={() => navigate('/books')}
               sx={{ px: 4 }}
@@ -79,9 +91,9 @@ const Cart = () => {
       <Container maxWidth="xl">
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
-          <Link 
-            underline="hover" 
-            color="inherit" 
+          <Link
+            underline="hover"
+            color="inherit"
             onClick={() => navigate('/')}
             sx={{ cursor: 'pointer' }}
           >
@@ -125,10 +137,10 @@ const Cart = () => {
 
                     {/* Product Info */}
                     <Grid item xs={9} sm={5}>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ 
-                          fontWeight: 'bold', 
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: 'bold',
                           mb: 0.5,
                           cursor: 'pointer',
                           '&:hover': { color: 'primary.main' }
@@ -148,7 +160,7 @@ const Cart = () => {
                     {/* Quantity Controls */}
                     <Grid item xs={6} sm={3}>
                       <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: 1, width: 'fit-content' }}>
-                        <IconButton 
+                        <IconButton
                           onClick={() => handleQuantityChange(item.id, 'decrease')}
                           size="small"
                           disabled={item.quantity === 1}
@@ -158,7 +170,7 @@ const Cart = () => {
                         <Typography sx={{ px: 2, minWidth: 40, textAlign: 'center' }}>
                           {item.quantity}
                         </Typography>
-                        <IconButton 
+                        <IconButton
                           onClick={() => handleQuantityChange(item.id, 'increase')}
                           size="small"
                         >
@@ -169,7 +181,7 @@ const Cart = () => {
 
                     {/* Remove Button */}
                     <Grid item xs={6} sm={2} sx={{ textAlign: 'right' }}>
-                      <IconButton 
+                      <IconButton
                         onClick={() => handleRemoveItem(item.id)}
                         color="error"
                       >
@@ -183,8 +195,8 @@ const Cart = () => {
               ))}
 
               <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid #e0e0e0' }}>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   onClick={() => navigate('/books')}
                 >
                   Tiếp tục mua sắm
@@ -224,9 +236,9 @@ const Cart = () => {
                 </Typography>
               </Box>
 
-              <Button 
-                variant="contained" 
-                fullWidth 
+              <Button
+                variant="contained"
+                fullWidth
                 size="large"
                 onClick={() => navigate('/checkout', { state: { cartItems } })}
                 sx={{ py: 1.5, fontSize: '1.1rem', mb: 2 }}
@@ -236,13 +248,13 @@ const Cart = () => {
 
               {/* Shipping Info */}
               {subtotal < 800000 && (
-                <Box sx={{ 
-                  bgcolor: '#f5f5f5', 
-                  p: 2, 
-                  borderRadius: 1, 
-                  display: 'flex', 
-                  alignItems: 'start', 
-                  gap: 1 
+                <Box sx={{
+                  bgcolor: '#f5f5f5',
+                  p: 2,
+                  borderRadius: 1,
+                  display: 'flex',
+                  alignItems: 'start',
+                  gap: 1
                 }}>
                   <LocalShippingOutlinedIcon color="primary" sx={{ mt: 0.5 }} />
                   <Typography variant="body2">
@@ -251,7 +263,7 @@ const Cart = () => {
                 </Box>
               )}
 
-              
+
             </Paper>
           </Grid>
         </Grid>

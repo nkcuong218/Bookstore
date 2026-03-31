@@ -1,6 +1,6 @@
-import { 
-  Box, Container, Typography, Paper, Grid, TextField, Button, 
-  Avatar, Breadcrumbs, Link, Divider, IconButton, InputAdornment 
+import {
+  Box, Container, Typography, Paper, Grid, TextField, Button,
+  Avatar, Breadcrumbs, Link, Divider, IconButton, InputAdornment
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -12,6 +12,8 @@ import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
+import userService from '../../apis/userService'
+import orderService from '../../apis/orderService'
 
 const UserProfile = () => {
   const navigate = useNavigate()
@@ -40,30 +42,33 @@ const UserProfile = () => {
   })
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('currentUser') || '{}')
-    if (!user || !user.id) {
-      navigate('/login')
-      return
+    const loadProfile = async () => {
+      try {
+        const user = await userService.getProfile()
+        setCurrentUser(user)
+        setFormData({
+          username: user.fullName || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          fullName: user.fullName || '',
+          address: user.address || '',
+          ward: '',
+          district: '',
+          city: ''
+        })
+      } catch {
+        navigate('/login')
+      }
     }
-    
-    setCurrentUser(user)
-    setFormData({
-      username: user.username || '',
-      email: user.email || '',
-      phone: user.phone || '',
-      fullName: user.fullName || '',
-      address: user.address || '',
-      ward: user.ward || '',
-      district: user.district || '',
-      city: user.city || ''
-    })
+
+    loadProfile()
   }, [navigate])
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate
     if (!formData.username || !formData.email) {
       alert('Tên đăng nhập và email không được để trống!')
@@ -86,39 +91,39 @@ const UserProfile = () => {
       }
     }
 
-    // Update user
-    const updatedUser = { ...currentUser, ...formData }
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser))
-    setCurrentUser(updatedUser)
-    setIsEditing(false)
-    alert('Cập nhật hồ sơ thành công!')
+    try {
+      const updatedUser = await userService.updateProfile({
+        fullName: formData.fullName || formData.username,
+        phone: formData.phone,
+        address: formData.address
+      })
+      setCurrentUser(updatedUser)
+      setIsEditing(false)
+      alert('Cập nhật hồ sơ thành công!')
+    } catch (error) {
+      alert(error.message || 'Cập nhật hồ sơ thất bại!')
+    }
   }
 
   const handleCancel = () => {
     // Reset form to current user data
     setFormData({
-      username: currentUser.username || '',
+      username: currentUser.fullName || '',
       email: currentUser.email || '',
       phone: currentUser.phone || '',
       fullName: currentUser.fullName || '',
       address: currentUser.address || '',
-      ward: currentUser.ward || '',
-      district: currentUser.district || '',
-      city: currentUser.city || ''
+      ward: '',
+      district: '',
+      city: ''
     })
     setIsEditing(false)
   }
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     // Validate
     if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
       alert('Vui lòng điền đầy đủ thông tin!')
-      return
-    }
-
-    // Check current password
-    if (passwordData.currentPassword !== currentUser.password) {
-      alert('Mật khẩu hiện tại không đúng!')
       return
     }
 
@@ -134,19 +139,18 @@ const UserProfile = () => {
       return
     }
 
-    // Update password
-    const updatedUser = { ...currentUser, password: passwordData.newPassword }
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser))
-    setCurrentUser(updatedUser)
-    
-    // Reset password form
-    setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    })
-    setIsChangingPassword(false)
-    alert('Đổi mật khẩu thành công!')
+    try {
+      await userService.updateProfile({ password: passwordData.newPassword })
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      })
+      setIsChangingPassword(false)
+      alert('Đổi mật khẩu thành công!')
+    } catch (error) {
+      alert(error.message || 'Đổi mật khẩu thất bại!')
+    }
   }
 
   const handleCancelPassword = () => {
@@ -166,21 +170,25 @@ const UserProfile = () => {
     setShowPassword(prev => ({ ...prev, [field]: !prev[field] }))
   }
 
-  const getOrderStats = () => {
-    const allOrders = JSON.parse(localStorage.getItem('userOrders') || '[]')
-    const userOrders = allOrders.filter(order => order.userId === currentUser?.id)
-    
-    const totalOrders = userOrders.length
-    const completedOrders = userOrders.filter(o => o.status === 'Đã giao').length
-    const totalSpent = userOrders.reduce((sum, order) => {
-      const subtotal = order.items.reduce((s, item) => s + (item.price * item.quantity), 0)
-      return sum + subtotal + (order.shipping || 0) - (order.discount || 0)
-    }, 0)
+  const [stats, setStats] = useState({ totalOrders: 0, completedOrders: 0, totalSpent: 0 })
 
-    return { totalOrders, completedOrders, totalSpent }
-  }
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const myOrders = await orderService.getMyOrders()
+        const totalOrders = (myOrders || []).length
+        const completedOrders = (myOrders || []).filter((o) => o.status === 'DELIVERED').length
+        const totalSpent = (myOrders || []).reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+        setStats({ totalOrders, completedOrders, totalSpent })
+      } catch {
+        setStats({ totalOrders: 0, completedOrders: 0, totalSpent: 0 })
+      }
+    }
 
-  const stats = currentUser ? getOrderStats() : { totalOrders: 0, completedOrders: 0, totalSpent: 0 }
+    if (currentUser) {
+      loadStats()
+    }
+  }, [currentUser])
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)
@@ -195,9 +203,9 @@ const UserProfile = () => {
       <Container maxWidth="xl">
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
-          <Link 
-            underline="hover" 
-            color="inherit" 
+          <Link
+            underline="hover"
+            color="inherit"
             onClick={() => navigate('/')}
             sx={{ cursor: 'pointer' }}
           >
@@ -498,7 +506,7 @@ const UserProfile = () => {
                     onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
                     disabled={!isChangingPassword}
                     required
-                    helperText={isChangingPassword ? "Ít nhất 6 ký tự" : ""}
+                    helperText={isChangingPassword ? 'Ít nhất 6 ký tự' : ''}
                     InputProps={{
                       endAdornment: isChangingPassword && (
                         <InputAdornment position="end">
@@ -525,8 +533,8 @@ const UserProfile = () => {
                     error={isChangingPassword && passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword}
                     helperText={
                       isChangingPassword && passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword
-                        ? "Mật khẩu không khớp"
-                        : ""
+                        ? 'Mật khẩu không khớp'
+                        : ''
                     }
                     InputProps={{
                       endAdornment: isChangingPassword && (

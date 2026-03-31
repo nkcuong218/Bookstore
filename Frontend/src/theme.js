@@ -7,29 +7,29 @@ const theme = extendTheme({
         primary: {
           main: '#3e5d58', // Bookstore Dark Green
           light: '#5a827b',
-          dark: '#2d433f',
+          dark: '#2d433f'
         },
         secondary: {
-          main: '#e57373', // Accent color (Salmon/Red)
+          main: '#e57373' // Accent color (Salmon/Red)
         },
         background: {
           default: '#f8f9fa',
-          paper: '#ffffff',
-        },
+          paper: '#ffffff'
+        }
       }
     },
     dark: {
       palette: {
         primary: {
-          main: '#5a827b',
+          main: '#5a827b'
         },
         secondary: {
-          main: '#ef5350',
+          main: '#ef5350'
         },
         background: {
           default: '#121212',
-          paper: '#1e1e1e',
-        },
+          paper: '#1e1e1e'
+        }
       }
     }
   },
@@ -65,7 +65,7 @@ const theme = extendTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: '4px',
+          borderRadius: '4px'
         }
       }
     }

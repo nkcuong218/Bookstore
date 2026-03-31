@@ -1,64 +1,79 @@
-import { Box, Grid, Paper, Typography, Card, CardContent } from '@mui/material'
+import { Box, Grid, Paper, Typography, Card, CardContent, CircularProgress } from '@mui/material'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import PeopleIcon from '@mui/icons-material/People'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
+import { useState, useEffect } from 'react'
+import statsService from '../../apis/statsService'
 
 const Dashboard = () => {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const result = await statsService.getDashboardStats()
+        setData(result)
+      } catch (error) {
+        console.error('Error fetching stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
+  }, [])
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (!data) return <Typography color="error">Không thể tải dữ liệu thống kê!</Typography>
   const stats = [
     {
       title: 'Tổng doanh thu',
-      value: '125.500.000đ',
+      value: data.totalRevenue || '0đ',
       icon: <AttachMoneyIcon sx={{ fontSize: 40 }} />,
       color: '#4caf50',
       change: '+12.5%'
     },
     {
       title: 'Đơn hàng',
-      value: '248',
+      value: data.totalOrders?.toLocaleString('vi-VN') || 0,
       icon: <ShoppingCartIcon sx={{ fontSize: 40 }} />,
       color: '#2196f3',
       change: '+8.2%'
     },
     {
       title: 'Người dùng',
-      value: '1,234',
+      value: data.totalUsers?.toLocaleString('vi-VN') || 0,
       icon: <PeopleIcon sx={{ fontSize: 40 }} />,
       color: '#ff9800',
       change: '+5.7%'
     },
     {
       title: 'Sách',
-      value: '856',
+      value: data.totalBooks?.toLocaleString('vi-VN') || 0,
       icon: <MenuBookIcon sx={{ fontSize: 40 }} />,
       color: '#9c27b0',
       change: '+3.2%'
     }
   ]
 
-  const recentOrders = [
-    { id: '#ORD001', customer: 'Nguyễn Văn A', total: '420.000đ', status: 'Đang xử lý', date: '29/03/2026' },
-    { id: '#ORD002', customer: 'Trần Thị B', total: '650.000đ', status: 'Đã giao', date: '29/03/2026' },
-    { id: '#ORD003', customer: 'Lê Văn C', total: '320.000đ', status: 'Đang giao', date: '28/03/2026' },
-    { id: '#ORD004', customer: 'Phạm Thị D', total: '890.000đ', status: 'Đã giao', date: '28/03/2026' },
-    { id: '#ORD005', customer: 'Hoàng Văn E', total: '450.000đ', status: 'Đang xử lý', date: '27/03/2026' }
-  ]
-
-  const topBooks = [
-    { title: 'Cánh Rồng Thứ Tư', sold: 145, revenue: '60.900.000đ' },
-    { title: 'Thói Quen Nguyên Tử', sold: 132, revenue: '36.828.000đ' },
-    { title: 'Nhà Giả Kim', sold: 98, revenue: '23.422.000đ' },
-    { title: 'Harry Potter', sold: 87, revenue: '22.533.000đ' },
-    { title: 'Đấu Trường Sinh Tử', sold: 76, revenue: '22.724.000đ' }
-  ]
+  const recentOrders = data.recentOrders || []
+  const topBooks = data.topBooks || []
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Đã giao': return 'success.main'
-      case 'Đang giao': return 'info.main'
-      case 'Đang xử lý': return 'warning.main'
-      default: return 'text.secondary'
+    case 'Đã giao': return 'success.main'
+    case 'Đang giao': return 'info.main'
+    case 'Đang xử lý': return 'warning.main'
+    default: return 'text.secondary'
     }
   }
 

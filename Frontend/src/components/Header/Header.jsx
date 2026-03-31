@@ -8,23 +8,37 @@ import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined'
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
-import { mockNavItems } from '../../apis/mock-data-vn'
+import authService from '../../apis/authService'
+
+const navItems = ['Trang chủ', 'Sách', 'Khuyến mãi', 'Liên hệ']
 
 const Header = () => {
   const [anchorEl, setAnchorEl] = useState(null)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
+  const [cartCount, setCartCount] = useState(0)
   const navigate = useNavigate()
 
   const open = Boolean(anchorEl)
 
-  // Check login status
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    const user = localStorage.getItem('currentUser')
-    if (token && user) {
-      setIsLoggedIn(true)
-      setCurrentUser(JSON.parse(user))
+    const refreshHeaderState = () => {
+      const user = authService.getCurrentUser()
+      setIsLoggedIn(authService.isAuthenticated())
+      setCurrentUser(user)
+
+      const cart = JSON.parse(localStorage.getItem('cart') || '[]')
+      const count = cart.reduce((sum, item) => sum + (item.quantity || 0), 0)
+      setCartCount(count)
+    }
+
+    refreshHeaderState()
+    window.addEventListener('cart-updated', refreshHeaderState)
+    window.addEventListener('storage', refreshHeaderState)
+
+    return () => {
+      window.removeEventListener('cart-updated', refreshHeaderState)
+      window.removeEventListener('storage', refreshHeaderState)
     }
   }, [])
 
@@ -37,8 +51,7 @@ const Header = () => {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('currentUser')
+    authService.logout()
     setIsLoggedIn(false)
     setCurrentUser(null)
     handleClose()
@@ -67,8 +80,8 @@ const Header = () => {
       <Container maxWidth="xl" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
 
         {/* Logo */}
-        <Typography 
-          variant="h4" 
+        <Typography
+          variant="h4"
           onClick={() => navigate('/')}
           sx={{ fontWeight: 'bold', color: 'primary.main', cursor: 'pointer' }}
         >
@@ -98,7 +111,7 @@ const Header = () => {
           <IconButton onClick={handleClick} sx={{ color: 'text.primary', flexDirection: 'column' }}>
             <PersonOutlineOutlinedIcon />
             <Typography variant="body2">
-              {isLoggedIn ? currentUser?.username : 'Tài khoản'}
+              {isLoggedIn ? (currentUser?.fullName || currentUser?.username) : 'Tài khoản'}
             </Typography>
           </IconButton>
 
@@ -113,11 +126,11 @@ const Header = () => {
               <Box>
                 <MenuItem disabled>
                   <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    Xin chào, {currentUser?.username}
+                    Xin chào, {currentUser?.fullName || currentUser?.username}
                   </Typography>
                 </MenuItem>
-                <MenuItem onClick={() => { handleClose(); navigate('/profile'); }}>Hồ sơ của tôi</MenuItem>
-                <MenuItem onClick={() => { handleClose(); navigate('/my-orders'); }}>Đơn hàng của tôi</MenuItem>
+                <MenuItem onClick={() => { handleClose(); navigate('/profile') }}>Hồ sơ của tôi</MenuItem>
+                <MenuItem onClick={() => { handleClose(); navigate('/my-orders') }}>Đơn hàng của tôi</MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <LogoutIcon sx={{ mr: 1 }} fontSize="small" />
                   Đăng xuất
@@ -154,13 +167,14 @@ const Header = () => {
           </IconButton>
 
           {/* Cart */}
-          <IconButton 
+          <IconButton
             onClick={() => navigate('/cart')}
             sx={{ color: 'text.primary' }}
           >
-            <Badge badgeContent={3} color="secondary">
+            <Badge badgeContent={cartCount} color="secondary">
               <ShoppingCartOutlinedIcon />
             </Badge>
+            <Typography variant='body2'>Giỏ hàng</Typography>
           </IconButton>
 
         </Box>
@@ -169,9 +183,9 @@ const Header = () => {
       {/* Nav */}
       <Box sx={{ borderTop: '1px solid #e0e0e0', py: 1 }}>
         <Container maxWidth="xl" sx={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-          {mockNavItems.map((item) => (
-            <Typography 
-              key={item} 
+          {navItems.map((item) => (
+            <Typography
+              key={item}
               onClick={() => {
                 if (item === 'Sách') {
                   navigate('/books')

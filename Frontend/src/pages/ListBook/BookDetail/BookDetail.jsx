@@ -1,24 +1,92 @@
-import { 
-  Box, Container, Typography, Grid, Button, Divider, Rating, Chip, Paper, Breadcrumbs, Link 
+import {
+  Box, Container, Typography, Grid, Button, Divider, Rating, Chip, Paper, Breadcrumbs, Link
 } from '@mui/material'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import BookCard from '../../../components/BookCard/BookCard'
-import { mockBooks } from '../../../apis/mock-data-vn'
+import { formatPrice } from '../../../utils/formatPrice'
+import bookService from '../../../apis/bookService'
 
 const BookDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [book, setBook] = useState(null)
+  const [relatedBooks, setRelatedBooks] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Find book by id
-  const book = mockBooks.find(b => b.id === parseInt(id))
+  useEffect(() => {
+    const fetchBookData = async () => {
+      setLoading(true)
+      try {
+        const detail = await bookService.getBookById(id)
+        setBook(detail)
+
+        const listResponse = await bookService.getBooks({
+          genre: detail.genre,
+          page: 0,
+          size: 12,
+          sortBy: 'newest'
+        })
+
+        const rel = (listResponse?.content || [])
+          .filter((b) => b.id !== detail.id)
+          .slice(0, 5)
+        setRelatedBooks(rel)
+      } catch {
+        setBook(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBookData()
+  }, [id])
+
+  const handleAddToCart = () => {
+    if (!book) return
+    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]')
+    const foundItem = existingCart.find((item) => item.id === book.id)
+
+    let nextCart
+    if (foundItem) {
+      nextCart = existingCart.map((item) =>
+        item.id === book.id
+          ? { ...item, quantity: item.quantity + quantity }
+          : item
+      )
+    } else {
+      nextCart = [
+        ...existingCart,
+        {
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          price: book.price,
+          coverUrl: book.coverUrl,
+          quantity
+        }
+      ]
+    }
+
+    localStorage.setItem('cart', JSON.stringify(nextCart))
+    window.dispatchEvent(new Event('cart-updated'))
+    alert('Đã thêm sách vào giỏ hàng!')
+  }
+
+  if (loading) {
+    return (
+      <Container sx={{ py: 8, textAlign: 'center' }}>
+        <Typography variant="h6" color="text.secondary">Đang tải dữ liệu sách...</Typography>
+      </Container>
+    )
+  }
 
   if (!book) {
     return (
@@ -30,11 +98,6 @@ const BookDetail = () => {
       </Container>
     )
   }
-
-  // Get related books (same genre, exclude current book)
-  const relatedBooks = mockBooks
-    .filter(b => b.genre === book.genre && b.id !== book.id)
-    .slice(0, 5)
 
   const handleQuantityChange = (action) => {
     if (action === 'increase') {
@@ -49,17 +112,17 @@ const BookDetail = () => {
       <Container maxWidth="xl">
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
-          <Link 
-            underline="hover" 
-            color="inherit" 
+          <Link
+            underline="hover"
+            color="inherit"
             onClick={() => navigate('/')}
             sx={{ cursor: 'pointer' }}
           >
             Home
           </Link>
-          <Link 
-            underline="hover" 
-            color="inherit" 
+          <Link
+            underline="hover"
+            color="inherit"
             onClick={() => navigate('/books')}
             sx={{ cursor: 'pointer' }}
           >
@@ -73,19 +136,19 @@ const BookDetail = () => {
           <Grid container spacing={4}>
             {/* Left: Book Image */}
             <Grid item xs={12} md={4}>
-              <Box sx={{ 
+              <Box sx={{
                 position: 'sticky',
                 top: 20,
-                bgcolor: '#f0f0f0', 
-                borderRadius: 2, 
+                bgcolor: '#f0f0f0',
+                borderRadius: 2,
                 overflow: 'hidden',
                 aspectRatio: '2/3',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <img 
-                  src={book.coverUrl} 
+                <img
+                  src={book.coverUrl}
                   alt={book.title}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
@@ -95,10 +158,10 @@ const BookDetail = () => {
             {/* Right: Book Details */}
             <Grid item xs={12} md={8}>
               {/* Genre Chip */}
-              <Chip 
-                label={book.genre} 
-                color="primary" 
-                size="small" 
+              <Chip
+                label={book.genre}
+                color="primary"
+                size="small"
                 sx={{ mb: 2 }}
               />
 
@@ -127,7 +190,7 @@ const BookDetail = () => {
 
               {/* Price */}
               <Typography variant="h4" color="primary.main" sx={{ fontWeight: 'bold', mb: 3 }}>
-                {book.price}
+                {formatPrice(book.price)}
               </Typography>
 
               {/* Stock Status */}
@@ -146,7 +209,7 @@ const BookDetail = () => {
                   Quantity:
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: 1 }}>
-                  <Button 
+                  <Button
                     onClick={() => handleQuantityChange('decrease')}
                     sx={{ minWidth: 40, py: 1 }}
                   >
@@ -155,7 +218,7 @@ const BookDetail = () => {
                   <Typography sx={{ px: 3, py: 1, minWidth: 50, textAlign: 'center' }}>
                     {quantity}
                   </Typography>
-                  <Button 
+                  <Button
                     onClick={() => handleQuantityChange('increase')}
                     sx={{ minWidth: 40, py: 1 }}
                   >
@@ -166,16 +229,17 @@ const BookDetail = () => {
 
               {/* Action Buttons */}
               <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <Button 
-                  variant="contained" 
+                <Button
+                  variant="contained"
                   size="large"
                   startIcon={<ShoppingCartIcon />}
+                  onClick={handleAddToCart}
                   sx={{ flex: 1, py: 1.5, fontSize: '1.1rem' }}
                 >
                   ADD TO CART
                 </Button>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   size="large"
                   onClick={() => setIsFavorite(!isFavorite)}
                   sx={{ minWidth: 60 }}
@@ -185,14 +249,14 @@ const BookDetail = () => {
               </Box>
 
               {/* Shipping Info */}
-              <Box sx={{ 
-                bgcolor: '#f5f5f5', 
-                p: 2, 
-                borderRadius: 1, 
-                display: 'flex', 
-                alignItems: 'center', 
+              <Box sx={{
+                bgcolor: '#f5f5f5',
+                p: 2,
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
                 gap: 1,
-                mb: 3 
+                mb: 3
               }}>
                 <LocalShippingOutlinedIcon color="primary" />
                 <Typography variant="body2">
@@ -247,12 +311,12 @@ const BookDetail = () => {
             <Grid container spacing={3}>
               {relatedBooks.map((relatedBook) => (
                 <Grid item xs={12} sm={6} md={4} lg={2.4} key={relatedBook.id}>
-                  <BookCard 
+                  <BookCard
                     id={relatedBook.id}
-                    title={relatedBook.title} 
-                    author={relatedBook.author} 
-                    price={relatedBook.price} 
-                    coverUrl={relatedBook.coverUrl} 
+                    title={relatedBook.title}
+                    author={relatedBook.author}
+                    price={relatedBook.price}
+                    coverUrl={relatedBook.coverUrl}
                   />
                 </Grid>
               ))}

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import SearchIcon from '@mui/icons-material/Search'
 import { formatPrice } from '../../utils/formatPrice'
+import orderService from '../../apis/orderService'
 
 const OrdersManagement = () => {
   const navigate = useNavigate()
@@ -15,120 +16,15 @@ const OrdersManagement = () => {
     loadOrders()
   }, [])
 
-  const loadOrders = () => {
-    const savedOrders = JSON.parse(localStorage.getItem('adminOrders') || '[]')
-    
-    if (savedOrders.length === 0) {
-      // Initialize default orders
-      const defaultOrders = [
-        { 
-          id: 'ORD001', 
-          customer: 'Nguyễn Văn A', 
-          email: 'nguyenvana@email.com',
-          phone: '0901234567',
-          address: '123 Đường Lê Lợi, Quận 1, TP.HCM',
-          status: 'Đang xử lý', 
-          paymentMethod: 'COD',
-          date: '29/03/2026',
-          note: '',
-          items: [
-            { id: 1, name: 'Cánh Rồng Thứ Tư', price: 420000, quantity: 1, image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200&h=300' }
-          ],
-          shipping: 30000,
-          discount: 0
-        },
-        { 
-          id: 'ORD002', 
-          customer: 'Trần Thị B', 
-          email: 'tranthib@email.com',
-          phone: '0912345678',
-          address: '456 Đường Nguyễn Huệ, Quận 1, TP.HCM',
-          status: 'Đã giao', 
-          paymentMethod: 'Chuyển khoản',
-          date: '29/03/2026',
-          note: 'Giao hàng buổi sáng',
-          items: [
-            { id: 2, name: 'Ngọn Lửa Thép', price: 450000, quantity: 1, image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=200&h=300' },
-            { id: 3, name: 'Bệnh Nhân Im Lặng', price: 299000, quantity: 1, image: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=200&h=300' }
-          ],
-          shipping: 0,
-          discount: 50000
-        },
-        { 
-          id: 'ORD003', 
-          customer: 'Lê Văn C', 
-          email: 'levanc@email.com',
-          phone: '0923456789',
-          address: '789 Đường Trần Hưng Đạo, Quận 5, TP.HCM',
-          status: 'Đang giao', 
-          paymentMethod: 'COD',
-          date: '28/03/2026',
-          note: '',
-          items: [
-            { id: 4, name: 'Thói Quen Nguyên Tử', price: 279000, quantity: 1, image: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=200&h=300' }
-          ],
-          shipping: 30000,
-          discount: 0
-        },
-        { 
-          id: 'ORD004', 
-          customer: 'Phạm Thị D', 
-          email: 'phamthid@email.com',
-          phone: '0934567890',
-          address: '321 Đường Võ Văn Tần, Quận 3, TP.HCM',
-          status: 'Đã giao', 
-          paymentMethod: 'Thẻ tín dụng',
-          date: '28/03/2026',
-          note: 'Để hàng ở bảo vệ',
-          items: [
-            { id: 5, name: 'Nhà Giả Kim', price: 239000, quantity: 2, image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=200&h=300' },
-            { id: 1, name: 'Cánh Rồng Thứ Tư', price: 420000, quantity: 1, image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200&h=300' }
-          ],
-          shipping: 0,
-          discount: 100000
-        },
-        { 
-          id: 'ORD005', 
-          customer: 'Hoàng Văn E', 
-          email: 'hoangvane@email.com',
-          phone: '0945678901',
-          address: '654 Đường Cách Mạng Tháng 8, Quận 10, TP.HCM',
-          status: 'Đã hủy', 
-          paymentMethod: 'COD',
-          date: '27/03/2026',
-          note: 'Khách yêu cầu hủy',
-          items: [
-            { id: 2, name: 'Ngọn Lửa Thép', price: 450000, quantity: 1, image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=200&h=300' }
-          ],
-          shipping: 30000,
-          discount: 0
-        },
-        { 
-          id: 'ORD006', 
-          customer: 'Vũ Thị F', 
-          email: 'vuthif@email.com',
-          phone: '0956789012',
-          address: '987 Đường Phan Xích Long, Phú Nhuận, TP.HCM',
-          status: 'Đang xử lý', 
-          paymentMethod: 'Chuyển khoản',
-          date: '27/03/2026',
-          note: '',
-          items: [
-            { id: 3, name: 'Bệnh Nhân Im Lặng', price: 299000, quantity: 1, image: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=200&h=300' },
-            { id: 4, name: 'Thói Quen Nguyên Tử', price: 279000, quantity: 1, image: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=200&h=300' }
-          ],
-          shipping: 30000,
-          discount: 30000
-        }
-      ]
-      localStorage.setItem('adminOrders', JSON.stringify(defaultOrders))
-      setOrders(defaultOrders)
-    } else {
-      setOrders(savedOrders)
+  const loadOrders = async () => {
+    try {
+      const response = await orderService.getAllOrders({ page: 0, size: 200 })
+      setOrders(response?.content || [])
+    } catch {
+      setOrders([])
     }
   }
 
-  // Reload when component gets focus (after editing an order)
   useEffect(() => {
     const handleFocus = () => {
       loadOrders()
@@ -137,26 +33,37 @@ const OrdersManagement = () => {
     return () => window.removeEventListener('focus', handleFocus)
   }, [])
 
-  const calculateOrderTotal = (order) => {
-    const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    return subtotal + order.shipping - order.discount
+  const calculateOrderTotal = (order) => order.totalAmount || 0
+
+  const getStatusLabel = (status) => {
+    const statusMap = {
+      PENDING: 'Đang xử lý',
+      CONFIRMED: 'Đã xác nhận',
+      SHIPPING: 'Đang giao',
+      DELIVERED: 'Đã giao',
+      CANCELLED: 'Đã hủy'
+    }
+    return statusMap[status] || status
   }
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const orderCode = (order.orderCode || '').toLowerCase()
+    const customerName = (order.customerName || '').toLowerCase()
+    const statusLabel = getStatusLabel(order.status)
+    const matchesSearch = orderCode.includes(searchTerm.toLowerCase()) ||
+                         customerName.includes(searchTerm.toLowerCase()) ||
                          order.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter
+    const matchesStatus = statusFilter === 'all' || statusLabel === statusFilter
     return matchesSearch && matchesStatus
   })
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Đã giao': return 'success'
-      case 'Đang giao': return 'info'
-      case 'Đang xử lý': return 'warning'
-      case 'Đã hủy': return 'error'
-      default: return 'default'
+    case 'Đã giao': return 'success'
+    case 'Đang giao': return 'info'
+    case 'Đang xử lý': return 'warning'
+    case 'Đã hủy': return 'error'
+    default: return 'default'
     }
   }
 
@@ -178,7 +85,7 @@ const OrdersManagement = () => {
                 <InputAdornment position="start">
                   <SearchIcon />
                 </InputAdornment>
-              ),
+              )
             }}
           />
           <FormControl sx={{ minWidth: 200 }}>
@@ -212,18 +119,18 @@ const OrdersManagement = () => {
             <tbody>
               {filteredOrders.map((order) => (
                 <tr key={order.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                  <td style={{ padding: '12px', fontWeight: 600 }}>#{order.id}</td>
-                  <td style={{ padding: '12px' }}>{order.customer}</td>
+                  <td style={{ padding: '12px', fontWeight: 600 }}>#{order.orderCode}</td>
+                  <td style={{ padding: '12px' }}>{order.customerName}</td>
                   <td style={{ padding: '12px', color: '#666' }}>{order.email}</td>
-                  <td style={{ padding: '12px' }}>{order.items.length} sản phẩm</td>
+                  <td style={{ padding: '12px' }}>{(order.items || []).length} sản phẩm</td>
                   <td style={{ padding: '12px', fontWeight: 600 }}>{formatPrice(calculateOrderTotal(order))}</td>
                   <td style={{ padding: '12px' }}>
-                    <Chip label={order.status} color={getStatusColor(order.status)} size="small" />
+                    <Chip label={getStatusLabel(order.status)} color={getStatusColor(getStatusLabel(order.status))} size="small" />
                   </td>
-                  <td style={{ padding: '12px' }}>{order.date}</td>
+                  <td style={{ padding: '12px' }}>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       color="primary"
                       onClick={() => navigate(`/admin/orders/${order.id}`)}
                     >

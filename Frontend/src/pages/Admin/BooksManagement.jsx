@@ -6,62 +6,55 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import SearchIcon from '@mui/icons-material/Search'
 import { formatPrice } from '../../utils/formatPrice'
+import bookService from '../../apis/bookService'
 
 const BooksManagement = () => {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [books, setBooks] = useState([])
 
-  // Load books from localStorage on mount
   useEffect(() => {
-    const savedBooks = JSON.parse(localStorage.getItem('adminBooks') || '[]')
-    if (savedBooks.length === 0) {
-      // Initialize with default data if empty
-      const defaultBooks = [
-        { id: 1, title: 'Cánh Rồng Thứ Tư', author: 'Rebecca Yarros', price: 420000, stock: 45, status: 'Còn hàng', isbn: '978-1649374042', pages: 498, publisher: 'Nhà xuất bản Trẻ', description: 'Một câu chuyện hấp dẫn về kỵ sĩ rồng...', coverUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=200&h=300' },
-        { id: 2, title: 'Ngọn Lửa Thép', author: 'Rebecca Yarros', price: 450000, stock: 32, status: 'Còn hàng', isbn: '978-1649374172', pages: 623, publisher: 'Nhà xuất bản Trẻ', description: 'Phần tiếp theo của Cánh Rồng Thứ Tư...', coverUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=200&h=300' },
-        { id: 3, title: 'Bệnh Nhân Im Lặng', author: 'Alex Michaelides', price: 299000, stock: 28, status: 'Còn hàng', isbn: '978-1250301697', pages: 336, publisher: 'Nhà xuất bản Văn học', description: 'Một câu chuyện trinh thám ly kỳ...', coverUrl: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=200&h=300' },
-        { id: 4, title: 'Thói Quen Nguyên Tử', author: 'James Clear', price: 279000, stock: 67, status: 'Còn hàng', isbn: '978-0735211292', pages: 320, publisher: 'Nhà xuất bản Tổng hợp TP.HCM', description: 'Cách tạo thói quen tốt và phá vỡ thói quen xấu...', coverUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=200&h=300' },
-        { id: 5, title: 'Nhà Giả Kim', author: 'Paulo Coelho', price: 239000, stock: 12, status: 'Sắp hết', isbn: '978-0062315007', pages: 208, publisher: 'Nhà xuất bản Hội Nhà Văn', description: 'Hành trình tìm kiếm kho báu của một chàng chăn cừu...', coverUrl: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=200&h=300' },
-        { id: 6, title: 'Harry Potter', author: 'J.K. Rowling', price: 259000, stock: 0, status: 'Hết hàng', isbn: '978-0439708180', pages: 309, publisher: 'Nhà xuất bản Trẻ', description: 'Câu chuyện về cậu bé phù thủy...', coverUrl: 'https://images.unsplash.com/photo-1621351183012-e2f9972dd9bf?auto=format&fit=crop&q=80&w=200&h=300' }
-      ]
-      localStorage.setItem('adminBooks', JSON.stringify(defaultBooks))
-      setBooks(defaultBooks)
-    } else {
-      setBooks(savedBooks)
-    }
+    loadBooks()
   }, [])
 
-  // Reload books when navigating back
-  useEffect(() => {
-    const handleFocus = () => {
-      const savedBooks = JSON.parse(localStorage.getItem('adminBooks') || '[]')
-      setBooks(savedBooks)
+  const loadBooks = async () => {
+    try {
+      const response = await bookService.getBooks({ page: 0, size: 200, sortBy: 'newest' })
+      setBooks(response?.content || [])
+    } catch {
+      setBooks([])
     }
-    window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
-  }, [])
+  }
 
-  const filteredBooks = books.filter(book => 
+  const filteredBooks = books.filter(book =>
     book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     book.author.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Còn hàng': return 'success'
-      case 'Sắp hết': return 'warning'
-      case 'Hết hàng': return 'error'
-      default: return 'default'
+    case 'Còn hàng': return 'success'
+    case 'Sắp hết': return 'warning'
+    case 'Hết hàng': return 'error'
+    default: return 'default'
     }
   }
 
-  const handleDeleteBook = (bookId) => {
+  const getStockStatus = (stock) => {
+    if (stock > 20) return 'Còn hàng'
+    if (stock > 0) return 'Sắp hết'
+    return 'Hết hàng'
+  }
+
+  const handleDeleteBook = async (bookId) => {
     if (window.confirm('Bạn có chắc muốn xóa sách này?')) {
-      const updatedBooks = books.filter(book => book.id !== bookId)
-      localStorage.setItem('adminBooks', JSON.stringify(updatedBooks))
-      setBooks(updatedBooks)
-      alert('Xóa sách thành công!')
+      try {
+        await bookService.deleteBook(bookId)
+        await loadBooks()
+        alert('Xóa sách thành công!')
+      } catch (error) {
+        alert(error.message || 'Xóa sách thất bại!')
+      }
     }
   }
 
@@ -71,8 +64,8 @@ const BooksManagement = () => {
         <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
           Quản lý sách
         </Typography>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           startIcon={<AddIcon />}
           onClick={() => navigate('/admin/books/add')}
         >
@@ -92,7 +85,7 @@ const BooksManagement = () => {
               <InputAdornment position="start">
                 <SearchIcon />
               </InputAdornment>
-            ),
+            )
           }}
         />
 
@@ -118,18 +111,18 @@ const BooksManagement = () => {
                   <td style={{ padding: '12px', fontWeight: 600 }}>{formatPrice(book.price)}</td>
                   <td style={{ padding: '12px' }}>{book.stock}</td>
                   <td style={{ padding: '12px' }}>
-                    <Chip label={book.status} color={getStatusColor(book.status)} size="small" />
+                    <Chip label={getStockStatus(book.stock)} color={getStatusColor(getStockStatus(book.stock))} size="small" />
                   </td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       color="primary"
                       onClick={() => navigate(`/admin/books/edit/${book.id}`)}
                     >
                       <EditIcon fontSize="small" />
                     </IconButton>
-                    <IconButton 
-                      size="small" 
+                    <IconButton
+                      size="small"
                       color="error"
                       onClick={() => handleDeleteBook(book.id)}
                     >

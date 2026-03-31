@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import { styled } from '@mui/material/styles'
+import bookService from '../../apis/bookService'
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -14,7 +15,7 @@ const VisuallyHiddenInput = styled('input')({
   bottom: 0,
   left: 0,
   whiteSpace: 'nowrap',
-  width: 1,
+  width: 1
 })
 
 const AddBook = () => {
@@ -64,7 +65,7 @@ const AddBook = () => {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     // Validate
@@ -73,33 +74,34 @@ const AddBook = () => {
       return
     }
 
-    // Get existing books from localStorage or create new array
-    const existingBooks = JSON.parse(localStorage.getItem('adminBooks') || '[]')
-    
-    const newBook = {
-      id: existingBooks.length + 1,
-      ...formData,
+    const payload = {
+      title: formData.title,
+      author: formData.author,
       price: parseInt(formData.price),
       stock: parseInt(formData.stock),
+      isbn: formData.isbn,
       pages: parseInt(formData.pages) || 0,
-      status: parseInt(formData.stock) > 20 ? 'Còn hàng' : parseInt(formData.stock) > 0 ? 'Sắp hết' : 'Hết hàng',
-      createdAt: new Date().toISOString()
+      publisher: formData.publisher,
+      description: formData.description,
+      coverUrl: formData.coverUrl
     }
 
-    existingBooks.push(newBook)
-    localStorage.setItem('adminBooks', JSON.stringify(existingBooks))
-
-    alert('Thêm sách thành công!')
-    navigate('/admin/books')
+    try {
+      await bookService.createBook(payload)
+      alert('Thêm sách thành công!')
+      navigate('/admin/books')
+    } catch (error) {
+      alert(error.message || 'Thêm sách thất bại!')
+    }
   }
 
   return (
     <Box>
       {/* Breadcrumbs */}
       <Breadcrumbs sx={{ mb: 3 }}>
-        <Link 
-          underline="hover" 
-          color="inherit" 
+        <Link
+          underline="hover"
+          color="inherit"
           onClick={() => navigate('/admin/books')}
           sx={{ cursor: 'pointer' }}
         >

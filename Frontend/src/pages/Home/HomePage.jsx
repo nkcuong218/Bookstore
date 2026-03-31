@@ -1,16 +1,39 @@
 import { Box, Container, Typography, Grid, Button } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import BookCard from '../../components/BookCard/BookCard'
-
-import { mockBooks, mockGenres } from '../../apis/mock-data-vn'
+import bookService from '../../apis/bookService'
 
 const HomePage = () => {
+  const navigate = useNavigate()
+  const [books, setBooks] = useState([])
+  const [genres, setGenres] = useState([])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [featuredBooks, allGenres] = await Promise.all([
+          bookService.getFeaturedBooks(),
+          bookService.getGenres()
+        ])
+        setBooks(featuredBooks || [])
+        setGenres(allGenres || [])
+      } catch {
+        setBooks([])
+        setGenres([])
+      }
+    }
+
+    fetchData()
+  }, [])
+
   return (
     <Box>
       {/* Hero Banner */}
-      <Box sx={{ 
-        bgcolor: 'primary.light', 
-        color: 'white', 
-        py: 12, 
+      <Box sx={{
+        bgcolor: 'primary.light',
+        color: 'white',
+        py: 12,
         textAlign: 'center',
         backgroundImage: 'linear-gradient(135deg, #3e5d58 0%, #7ca19a 100%)'
       }}>
@@ -21,7 +44,13 @@ const HomePage = () => {
           <Typography variant="h6" sx={{ mb: 4, fontWeight: 'normal', opacity: 0.9 }}>
             Discover the most anticipated new releases and bestsellers of the season.
           </Typography>
-          <Button variant="contained" color="secondary" size="large" sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}>
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            sx={{ px: 4, py: 1.5, fontSize: '1.1rem' }}
+            onClick={() => navigate('/books')}
+          >
             SHOP NOW
           </Button>
         </Container>
@@ -30,12 +59,12 @@ const HomePage = () => {
       {/* Genres Row */}
       <Container maxWidth="xl" sx={{ my: 6 }}>
         <Grid container spacing={2} justifyContent="center">
-          {mockGenres.map((genre) => (
+          {genres.map((genre) => (
             <Grid item key={genre}>
-              <Box sx={{ 
-                width: 100, height: 100, 
-                borderRadius: '50%', 
-                bgcolor: '#f5f5f5', 
+              <Box sx={{
+                width: 100, height: 100,
+                borderRadius: '50%',
+                bgcolor: '#f5f5f5',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
                 border: '1px solid #e0e0e0',
@@ -62,14 +91,14 @@ const HomePage = () => {
           </Typography>
         </Box>
         <Grid container spacing={3} justifyContent="center">
-          {mockBooks.map((book) => (
+          {books.map((book) => (
             <Grid item key={book.id}>
-              <BookCard 
+              <BookCard
                 id={book.id}
-                title={book.title} 
-                author={book.author} 
-                price={book.price} 
-                coverUrl={book.coverUrl} 
+                title={book.title}
+                author={book.author}
+                price={book.price}
+                coverUrl={book.coverUrl}
               />
             </Grid>
           ))}

@@ -1,12 +1,13 @@
-import { 
+import {
   Box, Container, Typography, Paper, Chip, Button, Tabs, Tab,
-  Grid, Breadcrumbs, Link, Alert 
+  Grid, Breadcrumbs, Link, Alert
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import { formatPrice } from '../../utils/formatPrice'
+import orderService from '../../apis/orderService'
 
 const MyOrders = () => {
   const navigate = useNavigate()
@@ -18,69 +19,88 @@ const MyOrders = () => {
 
   useEffect(() => {
     loadOrders()
-    
+
     // Check if coming from checkout with success message
     if (location.state?.message) {
       setShowSuccessMessage(true)
       setNewOrderId(location.state.newOrderId)
-      
+
       // Clear the message after 5 seconds
       const timer = setTimeout(() => {
         setShowSuccessMessage(false)
         setNewOrderId(null)
       }, 5000)
-      
+
       // Clear navigation state
       window.history.replaceState({}, document.title)
-      
+
       return () => clearTimeout(timer)
     }
-    
+
     // Reload when window gains focus
     const handleFocus = () => loadOrders()
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
   }, [location])
 
-  const loadOrders = () => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
-    const allOrders = JSON.parse(localStorage.getItem('userOrders') || '[]')
-    
-    // Filter orders for current user
-    const userOrders = allOrders.filter(order => order.userId === currentUser.id)
-    
-    // Sort by date (newest first)
-    userOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    
-    setOrders(userOrders)
+  const mapStatus = (status) => {
+    const statusMap = {
+      PENDING: 'Đang xử lý',
+      CONFIRMED: 'Đã xác nhận',
+      SHIPPING: 'Đang giao',
+      DELIVERED: 'Đã giao',
+      CANCELLED: 'Đã hủy'
+    }
+    return statusMap[status] || status
+  }
+
+  const loadOrders = async () => {
+    try {
+      const response = await orderService.getMyOrders()
+      setOrders(response || [])
+    } catch {
+      setOrders([])
+    }
   }
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Đã giao': return 'success'
-      case 'Đang giao': return 'info'
-      case 'Đang xử lý': return 'warning'
-      case 'Đã hủy': return 'error'
-      default: return 'default'
+    case 'Đã giao': return 'success'
+    case 'Đã xác nhận': return 'info'
+    case 'Đang giao': return 'info'
+    case 'Đang xử lý': return 'warning'
+    case 'Đã hủy': return 'error'
+    default: return 'default'
     }
   }
 
-  const calculateTotal = (order) => {
-    const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    return subtotal + (order.shipping || 0) - (order.discount || 0)
-  }
+  const calculateTotal = (order) => order.totalAmount || 0
 
-  const filteredOrders = tabValue === 'all' 
-    ? orders 
+  const filteredOrders = tabValue === 'all'
+    ? orders
     : orders.filter(order => {
-        switch (tabValue) {
-          case 'processing': return order.status === 'Đang xử lý'
-          case 'shipping': return order.status === 'Đang giao'
-          case 'completed': return order.status === 'Đã giao'
-          case 'cancelled': return order.status === 'Đã hủy'
-          default: return true
-        }
-      })
+      const statusLabel = mapStatus(order.status)
+      switch (tabValue) {
+      case 'processing': return statusLabel === 'Đang xử lý'
+      case 'shipping': return statusLabel === 'Đang giao'
+      case 'completed': return statusLabel === 'Đã giao'
+      case 'cancelled': return statusLabel === 'Đã hủy'
+      default: return true
+      }
+    })
+
+  const normalizedOrders = filteredOrders.map((order) => ({
+    ...order,
+    statusLabel: mapStatus(order.status)
+  }))
+
+  const formatOrderDate = (createdAt) => {
+    try {
+      return new Date(createdAt).toLocaleDateString('vi-VN')
+    } catch {
+      return ''
+    }
+  }
 
   if (orders.length === 0) {
     return (
@@ -94,8 +114,8 @@ const MyOrders = () => {
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
               Hãy mua sắm và tạo đơn hàng đầu tiên của bạn
             </Typography>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               size="large"
               onClick={() => navigate('/books')}
               sx={{ px: 4 }}
@@ -113,9 +133,9 @@ const MyOrders = () => {
       <Container maxWidth="xl">
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
-          <Link 
-            underline="hover" 
-            color="inherit" 
+          <Link
+            underline="hover"
+            color="inherit"
             onClick={() => navigate('/')}
             sx={{ cursor: 'pointer' }}
           >
@@ -130,8 +150,8 @@ const MyOrders = () => {
 
         {/* Success Message */}
         {showSuccessMessage && (
-          <Alert 
-            severity="success" 
+          <Alert
+            severity="success"
             sx={{ mb: 3 }}
             onClose={() => setShowSuccessMessage(false)}
           >
@@ -141,8 +161,8 @@ const MyOrders = () => {
 
         {/* Tabs */}
         <Paper sx={{ mb: 3 }}>
-          <Tabs 
-            value={tabValue} 
+          <Tabs
+            value={tabValue}
             onChange={(e, newValue) => setTabValue(newValue)}
             variant="scrollable"
             scrollButtons="auto"
@@ -156,7 +176,7 @@ const MyOrders = () => {
         </Paper>
 
         {/* Orders List */}
-        {filteredOrders.length === 0 ? (
+        {normalizedOrders.length === 0 ? (
           <Paper sx={{ p: 6, textAlign: 'center' }}>
             <Typography variant="h6" color="text.secondary">
               Không có đơn hàng nào
@@ -164,15 +184,15 @@ const MyOrders = () => {
           </Paper>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {filteredOrders.map((order) => (
-              <Paper 
-                key={order.id} 
-                sx={{ 
+            {normalizedOrders.map((order) => (
+              <Paper
+                key={order.id}
+                sx={{
                   p: 3,
-                  border: order.id === newOrderId ? '2px solid' : 'none',
-                  borderColor: order.id === newOrderId ? 'success.main' : 'transparent',
+                  border: (order.orderCode || order.id) === newOrderId ? '2px solid' : 'none',
+                  borderColor: (order.orderCode || order.id) === newOrderId ? 'success.main' : 'transparent',
                   transition: 'all 0.3s ease',
-                  animation: order.id === newOrderId ? 'pulse 1s ease-in-out 2' : 'none',
+                  animation: (order.orderCode || order.id) === newOrderId ? 'pulse 1s ease-in-out 2' : 'none',
                   '@keyframes pulse': {
                     '0%, 100%': { boxShadow: '0 0 0 0 rgba(46, 125, 50, 0.4)' },
                     '50%': { boxShadow: '0 0 20px 10px rgba(46, 125, 50, 0)' }
@@ -180,9 +200,9 @@ const MyOrders = () => {
                 }}
               >
                 {/* Order Header */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
                   mb: 2,
                   pb: 2,
@@ -194,7 +214,7 @@ const MyOrders = () => {
                         Mã đơn hàng
                       </Typography>
                       <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                        {order.id}
+                        {order.orderCode}
                       </Typography>
                     </Box>
                     <Box>
@@ -202,20 +222,20 @@ const MyOrders = () => {
                         Ngày đặt
                       </Typography>
                       <Typography variant="body1">
-                        {order.date}
+                        {formatOrderDate(order.createdAt)}
                       </Typography>
                     </Box>
                   </Box>
-                  <Chip 
-                    label={order.status} 
-                    color={getStatusColor(order.status)} 
+                  <Chip
+                    label={order.statusLabel}
+                    color={getStatusColor(order.statusLabel)}
                     size="medium"
                   />
                 </Box>
 
                 {/* Order Items */}
                 <Grid container spacing={2} sx={{ mb: 2 }}>
-                  {order.items.map((item) => (
+                  {(order.items || []).map((item) => (
                     <Grid item xs={12} sm={6} md={3} key={item.id}>
                       <Box sx={{ display: 'flex', gap: 1.5 }}>
                         <Box
@@ -229,14 +249,14 @@ const MyOrders = () => {
                           }}
                         >
                           <img
-                            src={item.image}
-                            alt={item.name}
+                            src={item.bookCoverUrl}
+                            alt={item.bookTitle}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         </Box>
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            {item.name}
+                            {item.bookTitle}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
                             x{item.quantity}
@@ -251,9 +271,9 @@ const MyOrders = () => {
                 </Grid>
 
                 {/* Order Footer */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
+                <Box sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
                   pt: 2,
                   borderTop: '1px solid #e0e0e0'
@@ -266,8 +286,8 @@ const MyOrders = () => {
                       {formatPrice(calculateTotal(order))}
                     </Typography>
                   </Box>
-                  <Button 
-                    variant="outlined" 
+                  <Button
+                    variant="outlined"
                     startIcon={<VisibilityOutlinedIcon />}
                     onClick={() => navigate(`/my-orders/${order.id}`)}
                   >

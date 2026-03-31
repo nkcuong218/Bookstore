@@ -1,16 +1,17 @@
-import { 
-  Box, Container, Typography, Grid, Button, Paper, TextField, 
-  Divider, RadioGroup, FormControlLabel, Radio, Breadcrumbs, Link 
+import {
+  Box, Container, Typography, Grid, Button, Paper, TextField,
+  Divider, RadioGroup, FormControlLabel, Radio, Breadcrumbs, Link
 } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { formatPrice } from '../../utils/formatPrice'
+import orderService from '../../apis/orderService'
 
 const Checkout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const cartItems = location.state?.cartItems || []
-  
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -35,9 +36,9 @@ const Checkout = () => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = async () => {
     // Validate form
-    if (!formData.fullName || !formData.email || !formData.phone || 
+    if (!formData.fullName || !formData.email || !formData.phone ||
         !formData.address || !formData.city) {
       alert('Vui lòng điền đầy đủ thông tin!')
       return
@@ -57,51 +58,44 @@ const Checkout = () => {
       return
     }
 
-    // Create order
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
-    const orders = JSON.parse(localStorage.getItem('userOrders') || '[]')
-    
-    const newOrder = {
-      id: 'ORD' + String(orders.length + 1).padStart(3, '0'),
-      userId: currentUser.id || 'guest',
-      customer: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      address: `${formData.address}, ${formData.ward}, ${formData.district}, ${formData.city}`,
-      status: 'Đang xử lý',
-      paymentMethod: formData.paymentMethod,
-      date: new Date().toLocaleDateString('vi-VN'),
-      note: formData.note,
-      items: cartItems.map(item => ({
-        id: item.id,
-        name: item.title,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.coverUrl
-      })),
-      shipping: shippingFee,
-      discount: 0,
-      createdAt: new Date().toISOString()
+    const fullAddress = [formData.address, formData.ward, formData.district, formData.city]
+      .filter(Boolean)
+      .join(', ')
+
+    const paymentMap = {
+      COD: 'COD',
+      'Chuyển khoản': 'BANK_TRANSFER',
+      'Thẻ tín dụng': 'CREDIT_CARD',
+      'Ví điện tử': 'E_WALLET'
     }
 
-    orders.push(newOrder)
-    localStorage.setItem('userOrders', JSON.stringify(orders))
-    
-    // Also save to admin orders
-    const adminOrders = JSON.parse(localStorage.getItem('adminOrders') || '[]')
-    adminOrders.push(newOrder)
-    localStorage.setItem('adminOrders', JSON.stringify(adminOrders))
+    const payload = {
+      customerName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      address: fullAddress,
+      paymentMethod: paymentMap[formData.paymentMethod] || 'COD',
+      note: formData.note,
+      items: cartItems.map((item) => ({
+        bookId: item.id,
+        quantity: item.quantity
+      }))
+    }
 
-    // Clear cart
-    localStorage.removeItem('cart')
+    try {
+      const createdOrder = await orderService.createOrder(payload)
+      localStorage.removeItem('cart')
+      window.dispatchEvent(new Event('cart-updated'))
 
-    // Navigate to MyOrders
-    navigate('/my-orders', { 
-      state: { 
-        message: 'Đặt hàng thành công!',
-        newOrderId: newOrder.id 
-      } 
-    })
+      navigate('/my-orders', {
+        state: {
+          message: 'Đặt hàng thành công!',
+          newOrderId: createdOrder?.orderCode || createdOrder?.id
+        }
+      })
+    } catch (error) {
+      alert(error.message || 'Đặt hàng thất bại!')
+    }
   }
 
   if (cartItems.length === 0) {
@@ -112,8 +106,8 @@ const Checkout = () => {
             <Typography variant="h4" sx={{ mb: 2, color: 'text.secondary' }}>
               Không có sản phẩm để thanh toán
             </Typography>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               onClick={() => navigate('/cart')}
             >
               Quay lại giỏ hàng
@@ -129,17 +123,17 @@ const Checkout = () => {
       <Container maxWidth="xl">
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
-          <Link 
-            underline="hover" 
-            color="inherit" 
+          <Link
+            underline="hover"
+            color="inherit"
             onClick={() => navigate('/')}
             sx={{ cursor: 'pointer' }}
           >
             Trang chủ
           </Link>
-          <Link 
-            underline="hover" 
-            color="inherit" 
+          <Link
+            underline="hover"
+            color="inherit"
             onClick={() => navigate('/cart')}
             sx={{ cursor: 'pointer' }}
           >
@@ -247,25 +241,25 @@ const Checkout = () => {
                 value={formData.paymentMethod}
                 onChange={(e) => handleChange('paymentMethod', e.target.value)}
               >
-                <FormControlLabel 
-                  value="COD" 
-                  control={<Radio />} 
-                  label="Thanh toán khi nhận hàng (COD)" 
+                <FormControlLabel
+                  value="COD"
+                  control={<Radio />}
+                  label="Thanh toán khi nhận hàng (COD)"
                 />
-                <FormControlLabel 
-                  value="Chuyển khoản" 
-                  control={<Radio />} 
-                  label="Chuyển khoản ngân hàng" 
+                <FormControlLabel
+                  value="Chuyển khoản"
+                  control={<Radio />}
+                  label="Chuyển khoản ngân hàng"
                 />
-                <FormControlLabel 
-                  value="Thẻ tín dụng" 
-                  control={<Radio />} 
-                  label="Thẻ tín dụng/Ghi nợ" 
+                <FormControlLabel
+                  value="Thẻ tín dụng"
+                  control={<Radio />}
+                  label="Thẻ tín dụng/Ghi nợ"
                 />
-                <FormControlLabel 
-                  value="Ví điện tử" 
-                  control={<Radio />} 
-                  label="Ví điện tử (MoMo, ZaloPay)" 
+                <FormControlLabel
+                  value="Ví điện tử"
+                  control={<Radio />}
+                  label="Ví điện tử (MoMo, ZaloPay)"
                 />
               </RadioGroup>
             </Paper>
@@ -339,9 +333,9 @@ const Checkout = () => {
                 </Typography>
               </Box>
 
-              <Button 
-                variant="contained" 
-                fullWidth 
+              <Button
+                variant="contained"
+                fullWidth
                 size="large"
                 onClick={handleSubmitOrder}
                 sx={{ py: 1.5, fontSize: '1.1rem' }}

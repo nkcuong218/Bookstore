@@ -5,6 +5,27 @@ import { formatPrice } from '../../utils/formatPrice'
 const BookCard = ({ id, title, author, price, coverUrl }) => {
   const navigate = useNavigate()
 
+  const handleAddToCart = () => {
+    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]')
+    const foundItem = existingCart.find((item) => item.id === id)
+
+    let nextCart
+    if (foundItem) {
+      nextCart = existingCart.map((item) =>
+        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+      )
+    } else {
+      nextCart = [
+        ...existingCart,
+        { id, title, author, price, coverUrl, quantity: 1 }
+      ]
+    }
+
+    localStorage.setItem('cart', JSON.stringify(nextCart))
+    window.dispatchEvent(new Event('cart-updated'))
+    alert('Đã thêm sách vào giỏ hàng!')
+  }
+
   const handleCardClick = () => {
     navigate(`/books/${id}`)
   }
@@ -53,7 +74,7 @@ const BookCard = ({ id, title, author, price, coverUrl }) => {
             px: 1,
             pb: 1,
             opacity: 0,
-            transition: 'opacity 0.2s',
+            transition: 'opacity 0.2s'
           }}
         >
           <Button
@@ -63,7 +84,7 @@ const BookCard = ({ id, title, author, price, coverUrl }) => {
             size="small"
             onClick={(e) => {
               e.stopPropagation()
-              // TODO: thêm vào giỏ hàng
+              handleAddToCart()
             }}
             sx={{ boxShadow: 2, fontSize: '0.75rem', py: 0.6 }}
           >

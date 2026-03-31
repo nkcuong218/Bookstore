@@ -5,7 +5,6 @@ import DashboardIcon from '@mui/icons-material/Dashboard'
 import MenuBookIcon from '@mui/icons-material/MenuBook'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import PeopleIcon from '@mui/icons-material/People'
-import CategoryIcon from '@mui/icons-material/Category'
 import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
 
@@ -23,8 +22,8 @@ const AdminLayout = () => {
     { text: 'Tổng quan', icon: <DashboardIcon />, path: '/admin/dashboard' },
     { text: 'Quản lý sách', icon: <MenuBookIcon />, path: '/admin/books' },
     { text: 'Quản lý đơn hàng', icon: <ShoppingCartIcon />, path: '/admin/orders' },
-    { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users' },
-  
+    { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users' }
+
   ]
 
   const handleDrawerToggle = () => {
@@ -66,7 +65,7 @@ const AdminLayout = () => {
                   bgcolor: 'primary.light',
                   color: 'primary.main',
                   '&:hover': {
-                    bgcolor: 'primary.light',
+                    bgcolor: 'primary.light'
                   }
                 }
               }}
@@ -89,7 +88,7 @@ const AdminLayout = () => {
         position="fixed"
         sx={{
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          ml: { sm: `${drawerWidth}px` }
         }}
       >
         <Toolbar>
@@ -136,7 +135,7 @@ const AdminLayout = () => {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }
           }}
         >
           {drawer}
@@ -146,7 +145,7 @@ const AdminLayout = () => {
           variant="permanent"
           sx={{
             display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }
           }}
           open
         >

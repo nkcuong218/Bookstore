@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import { styled } from '@mui/material/styles'
+import bookService from '../../apis/bookService'
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -14,7 +15,7 @@ const VisuallyHiddenInput = styled('input')({
   bottom: 0,
   left: 0,
   whiteSpace: 'nowrap',
-  width: 1,
+  width: 1
 })
 
 const EditBook = () => {
@@ -34,29 +35,30 @@ const EditBook = () => {
   })
 
   useEffect(() => {
-    // Load book data from localStorage
-    const books = JSON.parse(localStorage.getItem('adminBooks') || '[]')
-    const book = books.find(b => b.id === parseInt(id))
-    
-    if (book) {
-      setFormData({
-        title: book.title || '',
-        author: book.author || '',
-        price: book.price || '',
-        stock: book.stock || '',
-        isbn: book.isbn || '',
-        pages: book.pages || '',
-        publisher: book.publisher || '',
-        description: book.description || '',
-        coverUrl: book.coverUrl || ''
-      })
-      if (book.coverUrl) {
-        setImagePreview(book.coverUrl)
+    const fetchBook = async () => {
+      try {
+        const book = await bookService.getBookById(id)
+        setFormData({
+          title: book.title || '',
+          author: book.author || '',
+          price: book.price || '',
+          stock: book.stock || '',
+          isbn: book.isbn || '',
+          pages: book.pages || '',
+          publisher: book.publisher || '',
+          description: book.description || '',
+          coverUrl: book.coverUrl || ''
+        })
+        if (book.coverUrl) {
+          setImagePreview(book.coverUrl)
+        }
+      } catch {
+        alert('Không tìm thấy sách!')
+        navigate('/admin/books')
       }
-    } else {
-      alert('Không tìm thấy sách!')
-      navigate('/admin/books')
     }
+
+    fetchBook()
   }, [id, navigate])
 
   const handleFormChange = (field, value) => {
@@ -91,7 +93,7 @@ const EditBook = () => {
     }
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     // Validate
@@ -100,37 +102,34 @@ const EditBook = () => {
       return
     }
 
-    // Get existing books
-    const books = JSON.parse(localStorage.getItem('adminBooks') || '[]')
-    
-    // Update book
-    const updatedBooks = books.map(book => 
-      book.id === parseInt(id)
-        ? {
-            ...book,
-            ...formData,
-            price: parseInt(formData.price),
-            stock: parseInt(formData.stock),
-            pages: parseInt(formData.pages) || 0,
-            status: parseInt(formData.stock) > 20 ? 'Còn hàng' : parseInt(formData.stock) > 0 ? 'Sắp hết' : 'Hết hàng',
-            updatedAt: new Date().toISOString()
-          }
-        : book
-    )
+    const payload = {
+      title: formData.title,
+      author: formData.author,
+      price: parseInt(formData.price),
+      stock: parseInt(formData.stock),
+      isbn: formData.isbn,
+      pages: parseInt(formData.pages) || 0,
+      publisher: formData.publisher,
+      description: formData.description,
+      coverUrl: formData.coverUrl
+    }
 
-    localStorage.setItem('adminBooks', JSON.stringify(updatedBooks))
-
-    alert('Cập nhật sách thành công!')
-    navigate('/admin/books')
+    try {
+      await bookService.updateBook(id, payload)
+      alert('Cập nhật sách thành công!')
+      navigate('/admin/books')
+    } catch (error) {
+      alert(error.message || 'Cập nhật sách thất bại!')
+    }
   }
 
   return (
     <Box>
       {/* Breadcrumbs */}
       <Breadcrumbs sx={{ mb: 3 }}>
-        <Link 
-          underline="hover" 
-          color="inherit" 
+        <Link
+          underline="hover"
+          color="inherit"
           onClick={() => navigate('/admin/books')}
           sx={{ cursor: 'pointer' }}
         >

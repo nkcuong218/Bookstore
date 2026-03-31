@@ -24,12 +24,15 @@ import EditBook from './pages/Admin/EditBook'
 import OrdersManagement from './pages/Admin/OrdersManagement'
 import OrderDetail from './pages/Admin/OrderDetail'
 import UsersManagement from './pages/Admin/UsersManagement'
+import AddUser from './pages/Admin/AddUser'
+import EditUser from './pages/Admin/EditUser'
+import authService from './apis/authService'
 
 // Protected Route Component
 const ProtectedAdminRoute = ({ children }) => {
-  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+  const currentUser = authService.getCurrentUser() || {}
   const isAdmin = currentUser.role === 'admin'
-  
+
   return isAdmin ? children : <Navigate to="/login" replace />
 }
 
@@ -47,7 +50,7 @@ function App() {
             <Footer />
           </Box>
         } />
-        
+
         <Route path="/books" element={
           <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <Header />
@@ -57,7 +60,7 @@ function App() {
             <Footer />
           </Box>
         } />
-        
+
         <Route path="/books/:id" element={
           <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <Header />
@@ -67,7 +70,7 @@ function App() {
             <Footer />
           </Box>
         } />
-        
+
         <Route path="/cart" element={
           <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <Header />
@@ -127,7 +130,7 @@ function App() {
             <Footer />
           </Box>
         } />
-        
+
         <Route path="/login" element={
           <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <Header />
@@ -137,7 +140,7 @@ function App() {
             <Footer />
           </Box>
         } />
-        
+
         <Route path="/register" element={
           <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <Header />
@@ -162,6 +165,8 @@ function App() {
           <Route path="orders" element={<OrdersManagement />} />
           <Route path="orders/:id" element={<OrderDetail />} />
           <Route path="users" element={<UsersManagement />} />
+          <Route path="users/add" element={<AddUser />} />
+          <Route path="users/edit/:id" element={<EditUser />} />
           <Route path="categories" element={
             <Box sx={{ textAlign: 'center', py: 8 }}>
               <h2>Quản lý thể loại</h2>

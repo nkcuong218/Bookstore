@@ -1,12 +1,11 @@
 import {
   Box, Container, Typography, Grid, Button, Paper,
-  IconButton, Divider, Breadcrumbs, Link, Chip, Snackbar, Alert
+  Divider, Breadcrumbs, Link, Chip, Snackbar, Alert
 } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined'
-import FavoriteIcon from '@mui/icons-material/Favorite'
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import { mockBooks } from '../../apis/mock-data-vn'
 import { formatPrice } from '../../utils/formatPrice'

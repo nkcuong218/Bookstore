@@ -1,55 +1,61 @@
-import { 
-  Box, Container, Typography, Paper, Grid, Chip, Divider, 
-  Breadcrumbs, Link, Button, Table, TableBody, TableCell, 
-  TableHead, TableRow 
+import {
+  Box, Container, Typography, Paper, Grid, Chip, Divider,
+  Breadcrumbs, Link, Button, Table, TableBody, TableCell,
+  TableHead, TableRow
 } from '@mui/material'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { formatPrice } from '../../utils/formatPrice'
+import orderService from '../../apis/orderService'
 
 const OrderDetailUser = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const [orderData, setOrderData] = useState(null)
 
-  useEffect(() => {
-    loadOrder()
-  }, [id])
-
-  const loadOrder = () => {
-    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
-    const allOrders = JSON.parse(localStorage.getItem('userOrders') || '[]')
-    
-    // Find order by ID and verify it belongs to current user
-    const order = allOrders.find(o => o.id === id && o.userId === currentUser.id)
-    
-    if (order) {
+  const loadOrder = useCallback(async () => {
+    try {
+      const order = await orderService.getOrderById(id)
       setOrderData(order)
-    } else {
-      // Order not found or doesn't belong to user
+    } catch {
       navigate('/my-orders')
     }
-  }
+  }, [id, navigate])
+
+  useEffect(() => {
+    loadOrder()
+  }, [loadOrder])
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Đã giao': return 'success'
-      case 'Đang giao': return 'info'
-      case 'Đang xử lý': return 'warning'
-      case 'Đã hủy': return 'error'
-      default: return 'default'
+    case 'DELIVERED': return 'success'
+    case 'SHIPPING': return 'info'
+    case 'PENDING': return 'warning'
+    case 'CONFIRMED': return 'info'
+    case 'CANCELLED': return 'error'
+    default: return 'default'
     }
+  }
+
+  const getStatusLabel = (status) => {
+    const statusMap = {
+      PENDING: 'Đang xử lý',
+      CONFIRMED: 'Đã xác nhận',
+      SHIPPING: 'Đang giao',
+      DELIVERED: 'Đã giao',
+      CANCELLED: 'Đã hủy'
+    }
+    return statusMap[status] || status
   }
 
   const calculateSubtotal = () => {
     if (!orderData?.items) return 0
-    return orderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    return orderData.items.reduce((sum, item) => sum + (item.subtotal || item.price * item.quantity), 0)
   }
 
   const calculateTotal = () => {
-    const subtotal = calculateSubtotal()
-    return subtotal + (orderData?.shipping || 0) - (orderData?.discount || 0)
+    return orderData?.totalAmount || 0
   }
 
   if (!orderData) {
@@ -71,17 +77,17 @@ const OrderDetailUser = () => {
       <Container maxWidth="xl">
         {/* Breadcrumbs */}
         <Breadcrumbs sx={{ mb: 3 }}>
-          <Link 
-            underline="hover" 
-            color="inherit" 
+          <Link
+            underline="hover"
+            color="inherit"
             onClick={() => navigate('/')}
             sx={{ cursor: 'pointer' }}
           >
             Trang chủ
           </Link>
-          <Link 
-            underline="hover" 
-            color="inherit" 
+          <Link
+            underline="hover"
+            color="inherit"
             onClick={() => navigate('/my-orders')}
             sx={{ cursor: 'pointer' }}
           >
@@ -93,20 +99,20 @@ const OrderDetailUser = () => {
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button 
-              startIcon={<ArrowBackIcon />} 
+            <Button
+              startIcon={<ArrowBackIcon />}
               onClick={() => navigate('/my-orders')}
               variant="outlined"
             >
               Quay lại
             </Button>
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-              Đơn hàng #{orderData.id}
+              Đơn hàng #{orderData.orderCode || orderData.id}
             </Typography>
           </Box>
-          <Chip 
-            label={orderData.status} 
-            color={getStatusColor(orderData.status)} 
+          <Chip
+            label={getStatusLabel(orderData.status)}
+            color={getStatusColor(orderData.status)}
             size="large"
             sx={{ fontSize: '1rem', py: 2.5 }}
           />
@@ -126,16 +132,16 @@ const OrderDetailUser = () => {
                     Ngày đặt:
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {orderData.date}
+                    {new Date(orderData.createdAt).toLocaleDateString('vi-VN')}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
                     Trạng thái:
                   </Typography>
-                  <Chip 
-                    label={orderData.status} 
-                    color={getStatusColor(orderData.status)} 
+                  <Chip
+                    label={getStatusLabel(orderData.status)}
+                    color={getStatusColor(orderData.status)}
                     size="small"
                   />
                 </Box>
@@ -188,21 +194,21 @@ const OrderDetailUser = () => {
                               overflow: 'hidden'
                             }}
                           >
-                            <img 
-                              src={item.image} 
-                              alt={item.name} 
+                            <img
+                              src={item.bookCoverUrl}
+                              alt={item.bookTitle}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                           </Box>
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {item.name}
+                            {item.bookTitle}
                           </Typography>
                         </Box>
                       </TableCell>
                       <TableCell align="right">{formatPrice(item.price)}</TableCell>
                       <TableCell align="center">{item.quantity}</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 600 }}>
-                        {formatPrice(item.price * item.quantity)}
+                        {formatPrice(item.subtotal || item.price * item.quantity)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -224,7 +230,7 @@ const OrderDetailUser = () => {
                     Người nhận
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                    {orderData.customer}
+                    {orderData.customerName}
                   </Typography>
                 </Box>
                 <Box>
@@ -266,12 +272,12 @@ const OrderDetailUser = () => {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography>Phí vận chuyển:</Typography>
-                  <Typography>{formatPrice(orderData.shipping)}</Typography>
+                  <Typography>{formatPrice(orderData.shippingFee || 0)}</Typography>
                 </Box>
-                {orderData.discount > 0 && (
+                {(orderData.discount || 0) > 0 && (
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography>Giảm giá:</Typography>
-                    <Typography color="error">-{formatPrice(orderData.discount)}</Typography>
+                    <Typography color="error">-{formatPrice(orderData.discount || 0)}</Typography>
                   </Box>
                 )}
                 <Divider />
