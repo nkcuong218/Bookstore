@@ -40,10 +40,19 @@ class ApiClient {
     }
 
     const response = await fetch(url, config)
+    const contentType = response.headers.get('content-type') || ''
+    const isJsonResponse = contentType.includes('application/json')
 
     // Xử lý response không thành công
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+      const errorData = isJsonResponse
+        ? await response.json().catch(() => ({}))
+        : await response.text().catch(() => '')
+
+      if (typeof errorData === 'string') {
+        throw new Error(errorData || `HTTP ${response.status}`)
+      }
+
       throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`)
     }
 
@@ -52,7 +61,11 @@ class ApiClient {
       return null
     }
 
-    return await response.json()
+    if (isJsonResponse) {
+      return await response.json()
+    }
+
+    return await response.text()
   }
 
   get(endpoint, options = {}) {

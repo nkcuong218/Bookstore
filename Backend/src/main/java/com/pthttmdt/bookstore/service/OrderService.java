@@ -109,6 +109,23 @@ public class OrderService {
         return OrderDto.Response.fromEntity(order);
     }
 
+    @Transactional
+    public OrderDto.Response confirmReceived(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng!"));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền cập nhật đơn hàng này!");
+        }
+
+        if (order.getStatus() != Order.Status.DELIVERED) {
+            throw new RuntimeException("Chỉ có thể xác nhận khi đơn hàng ở trạng thái đã giao!");
+        }
+
+        order.setStatus(Order.Status.RECEIVED);
+        return OrderDto.Response.fromEntity(orderRepository.save(order));
+    }
+
     // Admin
     public Page<OrderDto.Response> getAllOrders(int page, int size) {
         return orderRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, size))
@@ -119,6 +136,10 @@ public class OrderService {
     public OrderDto.Response updateStatus(Long orderId, String status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng!"));
+
+        if (order.getStatus() == Order.Status.RECEIVED) {
+            throw new RuntimeException("Đơn hàng đã được khách xác nhận nhận, không thể thay đổi trạng thái nữa!");
+        }
 
         order.setStatus(Order.Status.valueOf(status.toUpperCase()));
         return OrderDto.Response.fromEntity(orderRepository.save(order));

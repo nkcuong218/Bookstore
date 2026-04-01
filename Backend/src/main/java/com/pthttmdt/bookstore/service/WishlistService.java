@@ -22,13 +22,20 @@ public class WishlistService {
     public List<WishlistDto.ItemResponse> getMyWishlist(Long userId) {
         return wishlistRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
+                .filter(item -> item.getActive() == null || Boolean.TRUE.equals(item.getActive()))
                 .map(WishlistDto.ItemResponse::fromEntity)
                 .toList();
     }
 
     public WishlistDto.ItemResponse addToWishlist(Long userId, Long bookId) {
         return wishlistRepository.findByUserIdAndBookId(userId, bookId)
-                .map(WishlistDto.ItemResponse::fromEntity)
+                .map(item -> {
+                    if (!Boolean.TRUE.equals(item.getActive())) {
+                        item.setActive(true);
+                        item = wishlistRepository.save(item);
+                    }
+                    return WishlistDto.ItemResponse.fromEntity(item);
+                })
                 .orElseGet(() -> {
                     User user = userRepository.findById(userId)
                             .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng!"));
@@ -39,6 +46,7 @@ public class WishlistService {
                     WishlistItem item = WishlistItem.builder()
                             .user(user)
                             .book(book)
+                            .active(true)
                             .build();
 
                     return WishlistDto.ItemResponse.fromEntity(wishlistRepository.save(item));
@@ -46,17 +54,21 @@ public class WishlistService {
     }
 
     public void removeFromWishlist(Long userId, Long bookId) {
-        if (!wishlistRepository.existsByUserIdAndBookId(userId, bookId)) {
-            throw new RuntimeException("Sách chưa có trong danh sách yêu thích!");
-        }
-        wishlistRepository.deleteByUserIdAndBookId(userId, bookId);
+        wishlistRepository.findByUserIdAndBookId(userId, bookId).ifPresent(item -> {
+            item.setActive(false);
+            wishlistRepository.save(item);
+        });
     }
 
     public boolean isInWishlist(Long userId, Long bookId) {
-        return wishlistRepository.existsByUserIdAndBookId(userId, bookId);
+        return wishlistRepository.findByUserIdAndBookId(userId, bookId)
+                .map(item -> item.getActive() == null || Boolean.TRUE.equals(item.getActive()))
+                .orElse(false);
     }
 
     public void clearWishlist(Long userId) {
-        wishlistRepository.deleteAllByUserId(userId);
+        List<WishlistItem> items = wishlistRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        items.forEach(item -> item.setActive(false));
+        wishlistRepository.saveAll(items);
     }
 }

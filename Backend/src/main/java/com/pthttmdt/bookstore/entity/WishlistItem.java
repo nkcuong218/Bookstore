@@ -26,11 +26,17 @@ public class WishlistItem {
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
+    @Column(nullable = false, columnDefinition = "TINYINT(1) DEFAULT 1")
+    private Boolean active;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
+        if (active == null) {
+            active = true;
+        }
         createdAt = LocalDateTime.now();
     }
 }

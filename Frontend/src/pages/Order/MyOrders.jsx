@@ -49,6 +49,7 @@ const MyOrders = () => {
       CONFIRMED: 'Đã xác nhận',
       SHIPPING: 'Đang giao',
       DELIVERED: 'Đã giao',
+      RECEIVED: 'Đã nhận hàng',
       CANCELLED: 'Đã hủy'
     }
     return statusMap[status] || status
@@ -65,6 +66,7 @@ const MyOrders = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
+    case 'Đã nhận hàng': return 'success'
     case 'Đã giao': return 'success'
     case 'Đã xác nhận': return 'info'
     case 'Đang giao': return 'info'
@@ -83,7 +85,7 @@ const MyOrders = () => {
       switch (tabValue) {
       case 'processing': return statusLabel === 'Đang xử lý'
       case 'shipping': return statusLabel === 'Đang giao'
-      case 'completed': return statusLabel === 'Đã giao'
+      case 'completed': return statusLabel === 'Đã giao' || statusLabel === 'Đã nhận hàng'
       case 'cancelled': return statusLabel === 'Đã hủy'
       default: return true
       }

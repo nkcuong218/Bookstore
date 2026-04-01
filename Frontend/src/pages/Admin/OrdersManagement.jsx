@@ -41,6 +41,7 @@ const OrdersManagement = () => {
       CONFIRMED: 'Đã xác nhận',
       SHIPPING: 'Đang giao',
       DELIVERED: 'Đã giao',
+      RECEIVED: 'Đã nhận hàng',
       CANCELLED: 'Đã hủy'
     }
     return statusMap[status] || status
@@ -59,6 +60,7 @@ const OrdersManagement = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
+    case 'Đã nhận hàng': return 'success'
     case 'Đã giao': return 'success'
     case 'Đang giao': return 'info'
     case 'Đang xử lý': return 'warning'
@@ -97,6 +99,7 @@ const OrdersManagement = () => {
               <MenuItem value="Đang xử lý">Đang xử lý</MenuItem>
               <MenuItem value="Đang giao">Đang giao</MenuItem>
               <MenuItem value="Đã giao">Đã giao</MenuItem>
+              <MenuItem value="Đã nhận hàng">Đã nhận hàng</MenuItem>
               <MenuItem value="Đã hủy">Đã hủy</MenuItem>
             </Select>
           </FormControl>

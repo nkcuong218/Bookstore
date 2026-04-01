@@ -50,6 +50,15 @@ const orderService = {
    */
   updateOrderStatus: async (id, status) => {
     return apiClient.patch(`/api/orders/${id}/status?status=${status}`)
+  },
+
+  /**
+   * User xác nhận đã nhận hàng
+   * @param {Number} id - Order ID
+   * @returns {Promise<Object>} Updated order
+   */
+  confirmReceived: async (id) => {
+    return apiClient.patch(`/api/orders/${id}/confirm-received`)
   }
 }
 

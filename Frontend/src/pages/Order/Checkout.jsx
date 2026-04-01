@@ -1,9 +1,9 @@
 import {
   Box, Container, Typography, Grid, Button, Paper, TextField,
   Divider, RadioGroup, FormControlLabel, Radio, Breadcrumbs, Link,
-  Alert, Checkbox, CircularProgress, MenuItem
+  Alert, Checkbox, CircularProgress, MenuItem, Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material'
-import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { formatPrice } from '../../utils/formatPrice'
@@ -23,6 +23,12 @@ const Checkout = () => {
   const [addressMode, setAddressMode] = useState('existing')
   const [selectedAddressId, setSelectedAddressId] = useState('')
   const [saveNewAddress, setSaveNewAddress] = useState(true)
+  const [appliedProductCoupon, setAppliedProductCoupon] = useState(null)
+  const [appliedShippingCoupon, setAppliedShippingCoupon] = useState(null)
+  const [couponError, setCouponError] = useState('')
+  const [isCouponDialogOpen, setIsCouponDialogOpen] = useState(false)
+  const [selectedProductCouponCode, setSelectedProductCouponCode] = useState('')
+  const [selectedShippingCouponCode, setSelectedShippingCouponCode] = useState('')
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -93,10 +99,91 @@ const Checkout = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
   }
 
+  const couponRules = {
+    NEWBIE: {
+      code: 'NEWBIE',
+      description: 'Ưu đãi người mới: giảm 20.000đ cho đơn từ 100.000đ',
+      minOrder: 100000,
+      category: 'product',
+      type: 'fixed',
+      value: 20000
+    },
+    GIAM30K: {
+      code: 'GIAM30K',
+      description: 'Giảm 30.000đ cho đơn từ 300.000đ',
+      minOrder: 300000,
+      category: 'product',
+      type: 'fixed',
+      value: 30000
+    },
+    WELCOME10: {
+      code: 'WELCOME10',
+      description: 'Giảm 10% tối đa 50.000đ cho đơn từ 200.000đ',
+      minOrder: 200000,
+      category: 'product',
+      type: 'percent',
+      value: 10,
+      maxDiscount: 50000
+    },
+    BOOKLOVER: {
+      code: 'BOOKLOVER',
+      description: 'Giảm 50.000đ cho đơn từ 600.000đ',
+      minOrder: 600000,
+      category: 'product',
+      type: 'fixed',
+      value: 50000
+    },
+    FREESHIP20K: {
+      code: 'FREESHIP20K',
+      description: 'Giảm phí vận chuyển 20.000đ cho đơn từ 200.000đ',
+      minOrder: 200000,
+      category: 'shipping',
+      type: 'fixed',
+      value: 20000
+    },
+    SHIP10: {
+      code: 'SHIP10',
+      description: 'Giảm 10% phí vận chuyển cho đơn từ 150.000đ',
+      minOrder: 150000,
+      category: 'shipping',
+      type: 'percent',
+      value: 10
+    }
+  }
+
+  const ownedCoupons = Object.values(couponRules)
+
   const subtotal = calculateSubtotal()
   const shippingFee = subtotal >= 800000 ? 0 : 30000
-  const total = subtotal + shippingFee
   const cityOptions = ['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Cần Thơ', 'Hải Phòng']
+  const isCouponEligible = (coupon) => {
+    if (!coupon) return false
+    if (subtotal < coupon.minOrder) return false
+    if (coupon.category === 'shipping' && shippingFee <= 0) return false
+    return true
+  }
+
+  const getCouponDiscountValue = (coupon) => {
+    if (!coupon || !isCouponEligible(coupon)) return 0
+
+    const baseAmount = coupon.category === 'shipping' ? shippingFee : subtotal
+
+    if (coupon.type === 'fixed') {
+      return Math.min(coupon.value, baseAmount)
+    }
+
+    if (coupon.type === 'percent') {
+      const calculated = Math.round((baseAmount * coupon.value) / 100)
+      return Math.min(calculated, coupon.maxDiscount || calculated)
+    }
+
+    return 0
+  }
+
+  const productDiscountAmount = getCouponDiscountValue(appliedProductCoupon)
+  const shippingDiscountAmount = getCouponDiscountValue(appliedShippingCoupon)
+  const shippingFeeAfterDiscount = Math.max(shippingFee - shippingDiscountAmount, 0)
+  const total = Math.max(subtotal - productDiscountAmount + shippingFeeAfterDiscount, 0)
 
   const districtOptionsByCity = {
     'Hà Nội': ['Hai Bà Trưng', 'Đống Đa', 'Cầu Giấy', 'Hoàn Kiếm'],
@@ -120,18 +207,71 @@ const Checkout = () => {
       .join(', ')
   }
 
+  const normalizeVietnamPhone = (phone) => {
+    const digitsOnly = String(phone || '').replace(/\D/g, '')
+
+    // Convert +84xxxxxxxxx or 84xxxxxxxxx to 0xxxxxxxxx
+    if (digitsOnly.startsWith('84') && digitsOnly.length === 11) {
+      return `0${digitsOnly.slice(2)}`
+    }
+
+    return digitsOnly
+  }
+
+  const handleOpenCouponDialog = () => {
+    setSelectedProductCouponCode(appliedProductCoupon?.code || '')
+    setSelectedShippingCouponCode(appliedShippingCoupon?.code || '')
+    setCouponError('')
+    setIsCouponDialogOpen(true)
+  }
+
+  const handleApplyCouponFromDialog = () => {
+    const selectedProductCoupon = selectedProductCouponCode
+      ? couponRules[selectedProductCouponCode]
+      : null
+    const selectedShippingCoupon = selectedShippingCouponCode
+      ? couponRules[selectedShippingCouponCode]
+      : null
+
+    if (selectedProductCoupon && !isCouponEligible(selectedProductCoupon)) {
+      setCouponError(`Mã ${selectedProductCoupon.code} cần đơn tối thiểu ${formatPrice(selectedProductCoupon.minOrder)}`)
+      return
+    }
+
+    if (selectedShippingCoupon && !isCouponEligible(selectedShippingCoupon)) {
+      if (shippingFee <= 0) {
+        setCouponError('Đơn hàng hiện đã miễn phí vận chuyển, không cần mã ship')
+      } else {
+        setCouponError(`Mã ${selectedShippingCoupon.code} cần đơn tối thiểu ${formatPrice(selectedShippingCoupon.minOrder)}`)
+      }
+      return
+    }
+
+    setAppliedProductCoupon(selectedProductCoupon)
+    setAppliedShippingCoupon(selectedShippingCoupon)
+    setCouponError('')
+    setIsCouponDialogOpen(false)
+  }
+
+  const handleRemoveCoupon = (mode) => {
+    if (mode === 'shipping') {
+      setAppliedShippingCoupon(null)
+    } else {
+      setAppliedProductCoupon(null)
+    }
+    if (mode === 'shipping') {
+      setSelectedShippingCouponCode('')
+    } else {
+      setSelectedProductCouponCode('')
+    }
+    setCouponError('')
+  }
+
   const handleSubmitOrder = async () => {
     if (isSubmitting) return
 
     if (addressMode === 'new' && (!formData.fullName || !formData.phone)) {
       alert('Vui lòng điền đầy đủ họ tên và số điện thoại!')
-      return
-    }
-
-    // Phone validation
-    const phoneRegex = /^[0-9]{10}$/
-    if (!phoneRegex.test(formData.phone)) {
-      alert('Số điện thoại không hợp lệ! (10 chữ số)')
       return
     }
 
@@ -142,6 +282,19 @@ const Checkout = () => {
 
     if (addressMode === 'new' && (!formData.address || !formData.city)) {
       alert('Vui lòng điền đầy đủ địa chỉ mới!')
+      return
+    }
+
+    const rawPhone = addressMode === 'existing'
+      ? (selectedAddress?.phone || '')
+      : formData.phone
+
+    const normalizedPhone = normalizeVietnamPhone(rawPhone)
+
+    // Phone validation
+    const phoneRegex = /^0\d{9}$/
+    if (!phoneRegex.test(normalizedPhone)) {
+      alert('Số điện thoại không hợp lệ! (10 chữ số, bắt đầu bằng 0)')
       return
     }
 
@@ -161,11 +314,13 @@ const Checkout = () => {
         ? (selectedAddress?.recipientName || formData.fullName)
         : formData.fullName,
       email: formData.email || '',
-      phone: addressMode === 'existing'
-        ? (selectedAddress?.phone || formData.phone)
-        : formData.phone,
+      phone: normalizedPhone,
       address: fullAddress,
       paymentMethod: paymentMap[formData.paymentMethod] || 'COD',
+      note: [
+        appliedProductCoupon ? `Mã SP: ${appliedProductCoupon.code}` : null,
+        appliedShippingCoupon ? `Mã Ship: ${appliedShippingCoupon.code}` : null
+      ].filter(Boolean).join(' | ') || undefined,
       items: cartItems.map((item) => ({
         bookId: item.id,
         quantity: item.quantity
@@ -178,7 +333,7 @@ const Checkout = () => {
       if (addressMode === 'new' && saveNewAddress) {
         const createdAddress = await addressService.createAddress({
           recipientName: formData.fullName,
-          phone: formData.phone,
+          phone: normalizedPhone,
           addressLine: formData.address,
           ward: formData.ward,
           district: formData.district,
@@ -258,25 +413,8 @@ const Checkout = () => {
           {/* Left: Checkout Form */}
           <Grid item xs={12} md={8}>
             <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
-                <Box
-                  sx={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: '50%',
-                    bgcolor: '#0f172a',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '0.95rem'
-                  }}
-                >
-                  1
-                </Box>
-                <PlaceOutlinedIcon sx={{ color: '#d03d3d', fontSize: 24 }} />
-                <Typography sx={{ fontSize: '1.85rem', fontWeight: 900, letterSpacing: 0.4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
                   ĐỊA CHỈ NHẬN HÀNG
                 </Typography>
               </Box>
@@ -489,9 +627,185 @@ const Checkout = () => {
               </Grid>
             </Paper>
 
+            <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
+                  MÃ GIẢM GIÁ
+                </Typography>
+              </Box>
+
+              <Grid container spacing={1.5}>
+                <Grid item xs={12}>
+                  <Button
+                    fullWidth
+                    onClick={handleOpenCouponDialog}
+                    sx={{
+                      py: 1.4,
+                      px: 1.8,
+                      borderRadius: 2.2,
+                      textTransform: 'none',
+                      border: '1px solid #d9e4ff',
+                      background: 'linear-gradient(135deg, #eff4ff 0%, #f5f9ff 45%, #eef8ff 100%)',
+                      color: '#123a78',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 6px 18px rgba(40, 94, 176, 0.12)',
+                      '&:hover': {
+                        borderColor: '#8fb1ec',
+                        background: 'linear-gradient(135deg, #e4eeff 0%, #eff6ff 45%, #e7f4ff 100%)',
+                        boxShadow: '0 10px 24px rgba(40, 94, 176, 0.18)',
+                        transform: 'translateY(-1px)'
+                      }
+                    }}
+                  >
+                    <Box sx={{ textAlign: 'left' }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: '1rem', lineHeight: 1.2 }}>
+                        Chọn mã giảm giá
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.84rem', color: '#426aa7', mt: 0.3 }}>
+                        Mã ship ở trên, mã sản phẩm ở dưới
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '1.2rem', fontWeight: 800, color: '#2f5ea8' }}>
+                      {'>'}
+                    </Typography>
+                  </Button>
+                </Grid>
+                <Grid item xs={12}>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    {appliedShippingCoupon && (
+                      <Chip
+                        color="success"
+                        label={`${appliedShippingCoupon.code} - Giảm ship ${formatPrice(shippingDiscountAmount)}`}
+                        onDelete={() => handleRemoveCoupon('shipping')}
+                      />
+                    )}
+                    {appliedProductCoupon && (
+                      <Chip
+                        color="success"
+                        label={`${appliedProductCoupon.code} - Giảm SP ${formatPrice(productDiscountAmount)}`}
+                        onDelete={() => handleRemoveCoupon('product')}
+                      />
+                    )}
+                  </Box>
+                </Grid>
+              </Grid>
+
+              <Typography sx={{ mt: 1.5, color: couponError ? 'error.main' : 'text.secondary', fontSize: '0.92rem' }}>
+                {couponError || 'Mỗi loại chỉ áp dụng được 1 mã: 1 mã sản phẩm + 1 mã vận chuyển'}
+              </Typography>
+            </Paper>
+
+            <Dialog
+              open={isCouponDialogOpen}
+              onClose={() => setIsCouponDialogOpen(false)}
+              fullWidth
+              maxWidth="sm"
+            >
+              <DialogTitle>Chọn mã giảm giá</DialogTitle>
+              <DialogContent dividers>
+                <Typography sx={{ mb: 1, fontWeight: 800 }}>Mã giảm phí vận chuyển</Typography>
+                <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
+                  {ownedCoupons.filter((coupon) => coupon.category === 'shipping').map((coupon) => {
+                    const isSelected = selectedShippingCouponCode === coupon.code
+                    const eligible = isCouponEligible(coupon)
+                    const previewDiscount = getCouponDiscountValue(coupon)
+
+                    return (
+                      <Grid item xs={12} key={coupon.code}>
+                        <Paper
+                          variant="outlined"
+                          onClick={() => {
+                            setSelectedShippingCouponCode((prev) => (prev === coupon.code ? '' : coupon.code))
+                            setCouponError('')
+                          }}
+                          sx={{
+                            p: 1.5,
+                            cursor: 'pointer',
+                            borderColor: isSelected ? '#1976d2' : '#d6d7db',
+                            bgcolor: isSelected ? '#f3f8ff' : '#fff',
+                            opacity: eligible ? 1 : 0.7
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, alignItems: 'center' }}>
+                            <Box>
+                              <Typography sx={{ fontWeight: 800 }}>{coupon.code}</Typography>
+                              <Typography variant="body2" color="text.secondary">{coupon.description}</Typography>
+                              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                Đơn tối thiểu: {formatPrice(coupon.minOrder)}
+                              </Typography>
+                            </Box>
+
+                            {eligible ? (
+                              <Chip color="success" label={`Giảm ${formatPrice(previewDiscount)}`} size="small" />
+                            ) : (
+                              <Chip color="warning" label="Chưa đủ điều kiện" size="small" />
+                            )}
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    )
+                  })}
+                </Grid>
+
+                <Typography sx={{ mb: 1, fontWeight: 800 }}>Mã giảm giá sản phẩm</Typography>
+                <Grid container spacing={1.5}>
+                  {ownedCoupons.filter((coupon) => coupon.category === 'product').map((coupon) => {
+                    const isSelected = selectedProductCouponCode === coupon.code
+                    const eligible = isCouponEligible(coupon)
+                    const previewDiscount = getCouponDiscountValue(coupon)
+
+                    return (
+                      <Grid item xs={12} key={coupon.code}>
+                        <Paper
+                          variant="outlined"
+                          onClick={() => {
+                            setSelectedProductCouponCode((prev) => (prev === coupon.code ? '' : coupon.code))
+                            setCouponError('')
+                          }}
+                          sx={{
+                            p: 1.5,
+                            cursor: 'pointer',
+                            borderColor: isSelected ? '#1976d2' : '#d6d7db',
+                            bgcolor: isSelected ? '#f3f8ff' : '#fff',
+                            opacity: eligible ? 1 : 0.7
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, alignItems: 'center' }}>
+                            <Box>
+                              <Typography sx={{ fontWeight: 800 }}>{coupon.code}</Typography>
+                              <Typography variant="body2" color="text.secondary">{coupon.description}</Typography>
+                              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                Đơn tối thiểu: {formatPrice(coupon.minOrder)}
+                              </Typography>
+                            </Box>
+
+                            {eligible ? (
+                              <Chip color="success" label={`Giảm ${formatPrice(previewDiscount)}`} size="small" />
+                            ) : (
+                              <Chip color="warning" label="Chưa đủ điều kiện" size="small" />
+                            )}
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    )
+                  })}
+                </Grid>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setIsCouponDialogOpen(false)}>
+                  Hủy
+                </Button>
+                <Button variant="contained" onClick={handleApplyCouponFromDialog}>
+                  Áp dụng
+                </Button>
+              </DialogActions>
+            </Dialog>
+
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                Phương thức thanh toán
+                PHƯƠNG THỨC THANH TOÁN
               </Typography>
               <RadioGroup
                 value={formData.paymentMethod}
@@ -506,16 +820,6 @@ const Checkout = () => {
                   value="Chuyển khoản"
                   control={<Radio />}
                   label="Chuyển khoản ngân hàng"
-                />
-                <FormControlLabel
-                  value="Thẻ tín dụng"
-                  control={<Radio />}
-                  label="Thẻ tín dụng/Ghi nợ"
-                />
-                <FormControlLabel
-                  value="Ví điện tử"
-                  control={<Radio />}
-                  label="Ví điện tử (MoMo, ZaloPay)"
                 />
               </RadioGroup>
             </Paper>
@@ -572,10 +876,22 @@ const Checkout = () => {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
                   <Typography>Phí vận chuyển:</Typography>
-                  <Typography color={shippingFee === 0 ? 'success.main' : 'text.primary'}>
-                    {shippingFee === 0 ? 'Miễn phí' : formatPrice(shippingFee)}
+                  <Typography color={shippingFeeAfterDiscount === 0 ? 'success.main' : 'text.primary'}>
+                    {shippingFeeAfterDiscount === 0 ? 'Miễn phí' : formatPrice(shippingFeeAfterDiscount)}
                   </Typography>
                 </Box>
+                {shippingDiscountAmount > 0 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                    <Typography>Giảm phí ship:</Typography>
+                    <Typography color="error.main">-{formatPrice(shippingDiscountAmount)}</Typography>
+                  </Box>
+                )}
+                {productDiscountAmount > 0 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                    <Typography>Giảm giá sản phẩm:</Typography>
+                    <Typography color="error.main">-{formatPrice(productDiscountAmount)}</Typography>
+                  </Box>
+                )}
               </Box>
 
               <Divider sx={{ my: 2 }} />

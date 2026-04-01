@@ -44,9 +44,9 @@ public class WishlistController {
     ) {
         try {
             wishlistService.removeFromWishlist(user.getId(), bookId);
-            return ResponseEntity.ok("Xóa khỏi danh sách yêu thích thành công!");
+            return ResponseEntity.ok(Map.of("message", "Xóa khỏi danh sách yêu thích thành công!"));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 
@@ -60,8 +60,8 @@ public class WishlistController {
     }
 
     @DeleteMapping
-    public ResponseEntity<String> clearWishlist(@AuthenticationPrincipal User user) {
+    public ResponseEntity<Map<String, String>> clearWishlist(@AuthenticationPrincipal User user) {
         wishlistService.clearWishlist(user.getId());
-        return ResponseEntity.ok("Đã xóa toàn bộ danh sách yêu thích!");
+        return ResponseEntity.ok(Map.of("message", "Đã xóa toàn bộ danh sách yêu thích!"));
     }
 }

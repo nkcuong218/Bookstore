@@ -34,19 +34,30 @@ const theme = extendTheme({
     }
   },
   typography: {
-    fontFamily: '"Lato", "Arial", sans-serif',
-    h1: { fontFamily: '"Georgia", serif' },
-    h2: { fontFamily: '"Georgia", serif' },
-    h3: { fontFamily: '"Georgia", serif' },
-    h4: { fontFamily: '"Georgia", serif' },
-    h5: { fontFamily: '"Georgia", serif' },
-    h6: { fontFamily: '"Georgia", serif' },
-    button: { textTransform: 'none', fontWeight: 600 }
+    fontFamily: '"Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif',
+    h1: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 700, letterSpacing: '-0.5px' },
+    h2: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 700, letterSpacing: '-0.3px' },
+    h3: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 700 },
+    h4: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 700 },
+    h5: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 600 },
+    h6: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 600 },
+    body1: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', lineHeight: 1.6 },
+    body2: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', lineHeight: 1.6 },
+    button: { textTransform: 'none', fontWeight: 600, fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' }
   },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        html: {
+          fontSize: '16px'
+        },
         body: {
+          fontFamily: '"Inter", "Segoe UI", sans-serif',
+          lineHeight: 1.6,
+          letterSpacing: '0.3px',
+          textRendering: 'optimizeLegibility',
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
           '*::-webkit-scrollbar': {
             width: '8px',
             height: '8px'

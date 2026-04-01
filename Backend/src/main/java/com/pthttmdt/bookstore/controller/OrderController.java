@@ -51,6 +51,19 @@ public class OrderController {
         }
     }
 
+    // User: xác nhận đã nhận hàng
+    @PatchMapping("/{id}/confirm-received")
+    public ResponseEntity<?> confirmReceived(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        try {
+            return ResponseEntity.ok(orderService.confirmReceived(id, user.getId()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // Admin: xem tất cả đơn hàng
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")

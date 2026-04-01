@@ -22,11 +22,12 @@ import { formatPrice } from '../../utils/formatPrice'
 import orderService from '../../apis/orderService'
 
 const STATUS_OPTIONS = [
-  { value: 'PENDING', label: '�ang x? l�' },
-  { value: 'CONFIRMED', label: '�� x�c nh?n' },
-  { value: 'SHIPPING', label: '�ang giao' },
-  { value: 'DELIVERED', label: '�� giao' },
-  { value: 'CANCELLED', label: '�� h?y' }
+  { value: 'PENDING', label: 'Đang xử lý' },
+  { value: 'CONFIRMED', label: 'Đã xác nhận' },
+  { value: 'SHIPPING', label: 'Đang giao' },
+  { value: 'DELIVERED', label: 'Đã giao' },
+  { value: 'RECEIVED', label: 'Đã nhận hàng' },
+  { value: 'CANCELLED', label: 'Đã hủy' }
 ]
 
 const OrderDetail = () => {
@@ -37,6 +38,8 @@ const OrderDetail = () => {
   const [orderData, setOrderData] = useState(null)
   const [pendingStatus, setPendingStatus] = useState('')
 
+  const isStatusLocked = orderData?.status === 'RECEIVED'
+
   useEffect(() => {
     const loadOrder = async () => {
       setLoading(true)
@@ -46,7 +49,7 @@ const OrderDetail = () => {
         const found = orders.find((order) => String(order.id) === String(id))
 
         if (!found) {
-          alert('Kh�ng t�m th?y don h�ng!')
+          alert('Không tìm thấy đơn hàng!')
           navigate('/admin/orders')
           return
         }
@@ -54,7 +57,7 @@ const OrderDetail = () => {
         setOrderData(found)
         setPendingStatus(found.status)
       } catch {
-        alert('Kh�ng th? t?i chi ti?t don h�ng!')
+        alert('Không thể tải chi tiết đơn hàng!')
         navigate('/admin/orders')
       } finally {
         setLoading(false)
@@ -95,10 +98,10 @@ const OrderDetail = () => {
       setOrderData(updated)
       setPendingStatus(updated.status)
       setIsEditing(false)
-      alert('C?p nh?t tr?ng th�i don h�ng th�nh c�ng!')
+      alert('Cập nhật trạng thái đơn hàng thành công!')
       navigate('/admin/orders')
     } catch (error) {
-      alert(error.message || 'C?p nh?t tr?ng th�i th?t b?i!')
+      alert(error.message || 'Cập nhật trạng thái thất bại!')
     }
   }
 
@@ -106,7 +109,7 @@ const OrderDetail = () => {
     return (
       <Box sx={{ textAlign: 'center', py: 8 }}>
         <Typography variant="h6" color="text.secondary">
-          �ang t?i...
+          Đang tải...
         </Typography>
       </Box>
     )
@@ -119,45 +122,53 @@ const OrderDetail = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/admin/orders')} variant="outlined">
-            Quay l?i
+            Quay lại
           </Button>
           <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-            Chi ti?t don h�ng #{orderData.orderCode}
+            Chi tiết đơn hàng #{orderData.orderCode}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
           {isEditing ? (
             <>
               <Button variant="outlined" onClick={() => { setIsEditing(false); setPendingStatus(orderData.status) }}>
-                H?y
+                Hủy
               </Button>
-              <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSaveStatus}>
-                Luu tr?ng th�i
+              <Button variant="contained" startIcon={<SaveIcon />} onClick={handleSaveStatus} disabled={isStatusLocked}>
+                Lưu trạng thái
               </Button>
             </>
           ) : (
-            <Button variant="contained" onClick={() => setIsEditing(true)}>
-              C?p nh?t tr?ng th�i
+            <Button variant="contained" onClick={() => setIsEditing(true)} disabled={isStatusLocked}>
+              Cập nhật trạng thái
             </Button>
           )}
         </Box>
       </Box>
 
+      {isStatusLocked && (
+        <Paper sx={{ p: 2, mb: 3, bgcolor: '#f6ffed', border: '1px solid #b7eb8f' }}>
+          <Typography variant="body2" sx={{ color: '#237804', fontWeight: 600 }}>
+            Đơn hàng đã được khách xác nhận nhận hàng. Trạng thái đã được khóa và không thể chỉnh sửa nữa.
+          </Typography>
+        </Paper>
+      )}
+
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-              Th�ng tin don h�ng
+              Thông tin đơn hàng
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Tr?ng th�i"
+                  label="Trạng thái"
                   select
                   value={pendingStatus}
                   onChange={(e) => setPendingStatus(e.target.value)}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isStatusLocked}
                 >
                   {STATUS_OPTIONS.map((option) => (
                     <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
@@ -167,7 +178,7 @@ const OrderDetail = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Phuong th?c thanh to�n"
+                  label="Phương thức thanh toán"
                   value={orderData.paymentMethod}
                   disabled
                 />
@@ -175,7 +186,7 @@ const OrderDetail = () => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Ghi ch�"
+                  label="Ghi chú"
                   multiline
                   rows={3}
                   value={orderData.note || ''}
@@ -187,15 +198,15 @@ const OrderDetail = () => {
 
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-              S?n ph?m ({(orderData.items || []).length})
+              Sản phẩm ({(orderData.items || []).length})
             </Typography>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>S?n ph?m</TableCell>
-                  <TableCell align="right">�on gi�</TableCell>
-                  <TableCell align="center">S? lu?ng</TableCell>
-                  <TableCell align="right">Th�nh ti?n</TableCell>
+                  <TableCell>Sản phẩm</TableCell>
+                  <TableCell align="right">Đơn giá</TableCell>
+                  <TableCell align="center">Số lượng</TableCell>
+                  <TableCell align="right">Thành tiền</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -233,47 +244,47 @@ const OrderDetail = () => {
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-              Th�ng tin kh�ch h�ng
+              Thông tin khách hàng
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField fullWidth label="T�n kh�ch h�ng" value={orderData.customerName} disabled />
+              <TextField fullWidth label="Tên khách hàng" value={orderData.customerName} disabled />
               <TextField fullWidth label="Email" value={orderData.email} disabled />
-              <TextField fullWidth label="S? di?n tho?i" value={orderData.phone} disabled />
-              <TextField fullWidth label="�?a ch?" multiline rows={3} value={orderData.address} disabled />
+              <TextField fullWidth label="Số điện thoại" value={orderData.phone} disabled />
+              <TextField fullWidth label="Địa chỉ" multiline rows={3} value={orderData.address} disabled />
             </Box>
           </Paper>
 
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-              T?ng k?t don h�ng
+              Tổng kết đơn hàng
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography>T?m t�nh:</Typography>
+                <Typography>Tạm tính:</Typography>
                 <Typography>{formatPrice(calculateSubtotal())}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography>Ph� v?n chuy?n:</Typography>
+                <Typography>Phí vận chuyển:</Typography>
                 <Typography>{formatPrice(orderData.shippingFee || 0)}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography>Gi?m gi�:</Typography>
+                <Typography>Giảm giá:</Typography>
                 <Typography color="error">-{formatPrice(orderData.discount || 0)}</Typography>
               </Box>
               <Divider />
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>T?ng c?ng:</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Tổng cộng:</Typography>
                 <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                   {formatPrice(orderData.totalAmount || 0)}
                 </Typography>
               </Box>
               <Divider />
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">Ng�y d?t:</Typography>
+                <Typography variant="body2" color="text.secondary">Ngày đặt:</Typography>
                 <Typography variant="body2">{new Date(orderData.createdAt).toLocaleDateString('vi-VN')}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">Tr?ng th�i:</Typography>
+                <Typography variant="body2" color="text.secondary">Trạng thái:</Typography>
                 <Chip label={getStatusLabel(orderData.status)} color={getStatusColor(orderData.status)} size="small" />
               </Box>
             </Box>

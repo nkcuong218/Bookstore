@@ -13,6 +13,7 @@ const OrderDetailUser = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const [orderData, setOrderData] = useState(null)
+  const [isConfirmingReceived, setIsConfirmingReceived] = useState(false)
 
   const loadOrder = useCallback(async () => {
     try {
@@ -29,6 +30,7 @@ const OrderDetailUser = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
+    case 'RECEIVED': return 'success'
     case 'DELIVERED': return 'success'
     case 'SHIPPING': return 'info'
     case 'PENDING': return 'warning'
@@ -44,9 +46,24 @@ const OrderDetailUser = () => {
       CONFIRMED: 'Đã xác nhận',
       SHIPPING: 'Đang giao',
       DELIVERED: 'Đã giao',
+      RECEIVED: 'Đã nhận hàng',
       CANCELLED: 'Đã hủy'
     }
     return statusMap[status] || status
+  }
+
+  const handleConfirmReceived = async () => {
+    if (!orderData?.id || isConfirmingReceived) return
+
+    try {
+      setIsConfirmingReceived(true)
+      const updatedOrder = await orderService.confirmReceived(orderData.id)
+      setOrderData(updatedOrder)
+    } catch (error) {
+      alert(error.message || 'Xác nhận nhận hàng thất bại!')
+    } finally {
+      setIsConfirmingReceived(false)
+    }
   }
 
   const calculateSubtotal = () => {
@@ -161,6 +178,18 @@ const OrderDetailUser = () => {
                     <Typography variant="body2">
                       {orderData.note}
                     </Typography>
+                  </Box>
+                )}
+                {orderData.status === 'DELIVERED' && (
+                  <Box sx={{ pt: 1 }}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={handleConfirmReceived}
+                      disabled={isConfirmingReceived}
+                    >
+                      {isConfirmingReceived ? 'Đang xử lý...' : 'Đã nhận được đơn hàng'}
+                    </Button>
                   </Box>
                 )}
               </Box>

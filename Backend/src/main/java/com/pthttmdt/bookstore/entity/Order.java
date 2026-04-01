@@ -64,6 +64,7 @@ public class Order {
         CONFIRMED,    // Đã xác nhận
         SHIPPING,     // Đang giao
         DELIVERED,    // Đã giao
+        RECEIVED,     // Khách đã nhận hàng
         CANCELLED     // Đã hủy
     }
 
