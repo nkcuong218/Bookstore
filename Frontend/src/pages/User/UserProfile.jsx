@@ -2,17 +2,19 @@ import {
   Box, Container, Typography, Paper, Grid, TextField, Button,
   Avatar, Breadcrumbs, Link, Divider, IconButton, InputAdornment
 } from '@mui/material'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined'
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import userService from '../../apis/userService'
+import addressService from '../../apis/addressService'
 import orderService from '../../apis/orderService'
 
 const UserProfile = () => {
@@ -20,6 +22,9 @@ const UserProfile = () => {
   const [isEditing, setIsEditing] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
+  const [savedAddresses, setSavedAddresses] = useState([])
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(true)
+  const [deletingAddressId, setDeletingAddressId] = useState(null)
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
@@ -29,11 +34,7 @@ const UserProfile = () => {
     username: '',
     email: '',
     phone: '',
-    fullName: '',
-    address: '',
-    ward: '',
-    district: '',
-    city: ''
+    fullName: ''
   })
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -41,28 +42,42 @@ const UserProfile = () => {
     confirmPassword: ''
   })
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const user = await userService.getProfile()
-        setCurrentUser(user)
-        setFormData({
-          username: user.fullName || '',
-          email: user.email || '',
-          phone: user.phone || '',
-          fullName: user.fullName || '',
-          address: user.address || '',
-          ward: '',
-          district: '',
-          city: ''
-        })
-      } catch {
-        navigate('/login')
-      }
+  const loadProfile = useCallback(async () => {
+    try {
+      const user = await userService.getProfile()
+      setCurrentUser(user)
+      setFormData({
+        username: user.fullName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        fullName: user.fullName || ''
+      })
+    } catch {
+      navigate('/login')
     }
-
-    loadProfile()
   }, [navigate])
+
+  const loadAddresses = useCallback(async () => {
+    try {
+      setIsLoadingAddresses(true)
+      const addresses = await addressService.getMyAddresses()
+      setSavedAddresses(Array.isArray(addresses) ? addresses : [])
+    } catch {
+      setSavedAddresses([])
+    } finally {
+      setIsLoadingAddresses(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadProfile()
+  }, [loadProfile])
+
+  useEffect(() => {
+    if (currentUser) {
+      loadAddresses()
+    }
+  }, [currentUser, loadAddresses])
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -94,8 +109,7 @@ const UserProfile = () => {
     try {
       const updatedUser = await userService.updateProfile({
         fullName: formData.fullName || formData.username,
-        phone: formData.phone,
-        address: formData.address
+        phone: formData.phone
       })
       setCurrentUser(updatedUser)
       setIsEditing(false)
@@ -111,13 +125,26 @@ const UserProfile = () => {
       username: currentUser.fullName || '',
       email: currentUser.email || '',
       phone: currentUser.phone || '',
-      fullName: currentUser.fullName || '',
-      address: currentUser.address || '',
-      ward: '',
-      district: '',
-      city: ''
+      fullName: currentUser.fullName || ''
     })
     setIsEditing(false)
+  }
+
+  const handleDeleteAddress = async (addressId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa địa chỉ này không?')) {
+      return
+    }
+
+    try {
+      setDeletingAddressId(addressId)
+      await addressService.deleteAddress(addressId)
+      await Promise.all([loadAddresses(), loadProfile()])
+      alert('Xóa địa chỉ thành công!')
+    } catch (error) {
+      alert(error.message || 'Xóa địa chỉ thất bại!')
+    } finally {
+      setDeletingAddressId(null)
+    }
   }
 
   const handleChangePassword = async () => {
@@ -397,57 +424,88 @@ const UserProfile = () => {
 
                 {/* Street Address */}
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Địa chỉ"
-                    value={formData.address}
-                    onChange={(e) => handleChange('address', e.target.value)}
-                    disabled={!isEditing}
-                    placeholder="Số nhà, tên đường"
-                  />
-                </Grid>
+                  <Box sx={{ mt: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LocationOnOutlinedIcon color="primary" />
+                        Địa chỉ nhận hàng đã lưu
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {savedAddresses.length} địa chỉ
+                      </Typography>
+                    </Box>
 
-                {/* Ward */}
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Phường/Xã"
-                    value={formData.ward}
-                    onChange={(e) => handleChange('ward', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </Grid>
+                    {isLoadingAddresses ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Đang tải danh sách địa chỉ...
+                      </Typography>
+                    ) : savedAddresses.length > 0 ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {savedAddresses.map((address) => (
+                          <Paper
+                            key={address.id}
+                            variant="outlined"
+                            sx={{
+                              p: 2,
+                              borderColor: address.isDefault ? 'primary.main' : 'divider',
+                              bgcolor: address.isDefault ? 'rgba(25, 118, 210, 0.04)' : 'background.paper'
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'flex-start' }}>
+                              <Box sx={{ minWidth: 0, flex: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
+                                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                                    {address.recipientName || 'Người nhận'}
+                                  </Typography>
+                                  {address.isDefault && (
+                                    <Box
+                                      sx={{
+                                        px: 1,
+                                        py: 0.25,
+                                        borderRadius: 999,
+                                        bgcolor: 'primary.main',
+                                        color: 'white',
+                                        fontSize: 12,
+                                        fontWeight: 700
+                                      }}
+                                    >
+                                      Mặc định
+                                    </Box>
+                                  )}
+                                </Box>
+                                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                                  {address.phone || 'Chưa có số điện thoại'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ lineHeight: 1.7 }}>
+                                  {address.fullAddress || 'Chưa có địa chỉ chi tiết'}
+                                </Typography>
+                              </Box>
 
-                {/* District */}
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Quận/Huyện"
-                    value={formData.district}
-                    onChange={(e) => handleChange('district', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </Grid>
-
-                {/* City */}
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Tỉnh/Thành phố"
-                    value={formData.city}
-                    onChange={(e) => handleChange('city', e.target.value)}
-                    disabled={!isEditing}
-                  />
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                startIcon={<DeleteOutlineIcon />}
+                                onClick={() => handleDeleteAddress(address.id)}
+                                disabled={deletingAddressId === address.id}
+                                sx={{ flexShrink: 0 }}
+                              >
+                                Xóa
+                              </Button>
+                            </Box>
+                          </Paper>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Bạn chưa có địa chỉ nhận hàng nào.
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                 </Grid>
               </Grid>
-
-              {isEditing && (
-                <Box sx={{ mt: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    💡 Lưu ý: Thông tin này sẽ được sử dụng làm mặc định khi bạn đặt hàng.
-                  </Typography>
-                </Box>
-              )}
             </Paper>
 
             {/* Change Password Section */}
