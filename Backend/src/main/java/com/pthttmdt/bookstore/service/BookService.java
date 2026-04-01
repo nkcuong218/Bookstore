@@ -75,8 +75,7 @@ public class BookService {
                 .title(req.getTitle())
                 .author(req.getAuthor())
                 .price(req.getPrice())
-            .genre(primaryGenreName(genres, req.getGenre()))
-            .genres(genres)
+                .genres(genres)
                 .description(req.getDescription())
                 .coverUrl(saveBase64Image(req.getCoverUrl()))
                 .isbn(req.getIsbn())
@@ -95,8 +94,7 @@ public class BookService {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sách!"));
 
-        boolean hasGenreInput = (req.getGenres() != null && !req.getGenres().isEmpty())
-            || (req.getGenre() != null && !req.getGenre().isBlank());
+        boolean hasGenreInput = (req.getGenres() != null && !req.getGenres().isEmpty());
 
         Set<Genre> genres = hasGenreInput ? resolveGenres(req) : book.getGenres();
 
@@ -105,7 +103,6 @@ public class BookService {
         book.setPrice(req.getPrice());
         if (hasGenreInput) {
             book.setGenres(genres);
-            book.setGenre(primaryGenreName(genres, req.getGenre()));
         }
         book.setDescription(req.getDescription());
         book.setCoverUrl(saveBase64Image(req.getCoverUrl()));
@@ -164,10 +161,6 @@ public class BookService {
     private Set<Genre> resolveGenres(BookDto.Request req) {
         LinkedHashSet<String> names = new LinkedHashSet<>();
 
-        if (req.getGenre() != null && !req.getGenre().isBlank()) {
-            names.add(req.getGenre().trim());
-        }
-
         if (req.getGenres() != null) {
             req.getGenres().stream()
                     .filter(item -> item != null && !item.isBlank())
@@ -202,18 +195,6 @@ public class BookService {
 
             return genreRepository.save(genre);
         });
-    }
-
-    private String primaryGenreName(Set<Genre> genres, String fallback) {
-        if (genres != null && !genres.isEmpty()) {
-            return genres.iterator().next().getName();
-        }
-
-        if (fallback != null && !fallback.isBlank()) {
-            return fallback.trim();
-        }
-
-        return null;
     }
 
     private String toSlug(String input) {

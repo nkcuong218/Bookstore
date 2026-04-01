@@ -33,6 +33,8 @@ public class OrderDto {
 
         private String paymentMethod = "COD";
         private String note;
+        private String productDiscountCode;
+        private String shippingDiscountCode;
 
         @NotEmpty(message = "Đơn hàng phải có ít nhất 1 sản phẩm")
         private List<ItemRequest> items;
@@ -61,6 +63,8 @@ public class OrderDto {
         private String status;
         private String paymentMethod;
         private String note;
+        private String productDiscountCode;
+        private String shippingDiscountCode;
         private Long shippingFee;
         private Long discount;
         private Long totalAmount;
@@ -78,6 +82,8 @@ public class OrderDto {
             res.status = order.getStatus().name();
             res.paymentMethod = order.getPaymentMethod().name();
             res.note = order.getNote();
+            res.productDiscountCode = order.getProductDiscountCode();
+            res.shippingDiscountCode = order.getShippingDiscountCode();
             res.shippingFee = order.getShippingFee();
             res.discount = order.getDiscount();
             res.totalAmount = order.getTotalAmount();

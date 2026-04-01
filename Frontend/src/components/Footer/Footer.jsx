@@ -24,7 +24,7 @@ const Footer = () => {
           ))}
           <Grid item xs={12} sm={3}>
             <Typography variant="h6" color="text.primary" gutterBottom>
-              CONNECT WITH US
+              KẾT NỐI VỚI CHÚNG TÔI
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <IconButton color="inherit"><FacebookIcon /></IconButton>
@@ -36,11 +36,11 @@ const Footer = () => {
         </Grid>
         <Box sx={{ textAlign: 'center', mt: 6, pt: 3, borderTop: '1px solid #eeeeee' }}>
           <Typography variant="body2">
-            © 2024 Barnes & Noble Booksellers, Inc.
+            © 2024 Nhà sách Barnes & Noble, Inc.
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 1 }}>
-            <Link href="#" color="inherit" variant="body2">Terms of Use</Link>
-            <Link href="#" color="inherit" variant="body2">Privacy Policy</Link>
+            <Link href="#" color="inherit" variant="body2">Điều khoản sử dụng</Link>
+            <Link href="#" color="inherit" variant="body2">Chính sách bảo mật</Link>
           </Box>
         </Box>
       </Container>

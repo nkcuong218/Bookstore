@@ -19,9 +19,6 @@ public class BookDto {
         @NotNull(message = "Giá không được trống")
         private Long price;
 
-        // Legacy single genre input
-        private String genre;
-        // New multi-genre input
         private List<String> genres;
         private String description;
         private String coverUrl;
@@ -41,9 +38,6 @@ public class BookDto {
         private String title;
         private String author;
         private Long price;
-        // Legacy single genre output
-        private String genre;
-        // New multi-genre output
         private List<String> genres;
         private String description;
         private String coverUrl;
@@ -72,7 +66,6 @@ public class BookDto {
                     .toList();
 
                 res.genres = genreNames;
-                res.genre = !genreNames.isEmpty() ? genreNames.get(0) : book.getGenre();
             res.description = book.getDescription();
             res.coverUrl = book.getCoverUrl();
             res.isbn = book.getIsbn();

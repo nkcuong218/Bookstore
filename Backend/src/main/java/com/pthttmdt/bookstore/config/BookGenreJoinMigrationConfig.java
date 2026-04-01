@@ -26,13 +26,20 @@ public class BookGenreJoinMigrationConfig {
                         )
                         """);
 
-                jdbcTemplate.execute("""
-                        INSERT IGNORE INTO book_genres(book_id, genre_id)
-                        SELECT b.id, g.id
-                        FROM books b
-                        JOIN genres g ON LOWER(TRIM(g.name)) = LOWER(TRIM(b.genre))
-                        WHERE b.genre IS NOT NULL AND TRIM(b.genre) <> ''
-                        """);
+                // Check if genre column still exists before backfilling
+                String checkSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+                        "WHERE TABLE_NAME = 'books' AND COLUMN_NAME = 'genre'";
+                Integer columnCount = jdbcTemplate.queryForObject(checkSql, Integer.class);
+                
+                if (columnCount != null && columnCount > 0) {
+                    jdbcTemplate.execute("""
+                            INSERT IGNORE INTO book_genres(book_id, genre_id)
+                            SELECT b.id, g.id
+                            FROM books b
+                            JOIN genres g ON LOWER(TRIM(g.name)) = LOWER(TRIM(b.genre))
+                            WHERE b.genre IS NOT NULL AND TRIM(b.genre) <> ''
+                            """);
+                }
             } catch (Exception ignored) {
                 // Keep startup resilient for environments with different DB capabilities.
             }

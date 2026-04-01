@@ -45,6 +45,15 @@ const bookService = {
   },
 
   /**
+   * Lấy danh sách đánh giá của một cuốn sách
+   * @param {Number} bookId - Book ID
+   * @returns {Promise<Array>} Array of reviews
+   */
+  getBookReviews: async (bookId) => {
+    return apiClient.get(`/api/reviews/books/${bookId}`, { skipAuth: true })
+  },
+
+  /**
    * Tạo sách mới (Admin only)
    * @param {Object} data - Book data
    * @returns {Promise<Object>} Created book

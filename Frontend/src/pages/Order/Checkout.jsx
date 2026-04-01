@@ -10,6 +10,8 @@ import { formatPrice } from '../../utils/formatPrice'
 import orderService from '../../apis/orderService'
 import userService from '../../apis/userService'
 import addressService from '../../apis/addressService'
+import discountCodeService from '../../apis/discountCodeService'
+import vietnamProvincesService from '../../apis/vietnamProvincesService'
 
 const Checkout = () => {
   const navigate = useNavigate()
@@ -29,6 +31,10 @@ const Checkout = () => {
   const [isCouponDialogOpen, setIsCouponDialogOpen] = useState(false)
   const [selectedProductCouponCode, setSelectedProductCouponCode] = useState('')
   const [selectedShippingCouponCode, setSelectedShippingCouponCode] = useState('')
+  const [couponRules, setCouponRules] = useState({})
+  const [provinceOptions, setProvinceOptions] = useState([])
+  const [districtOptions, setDistrictOptions] = useState([])
+  const [isLocationLoading, setIsLocationLoading] = useState(false)
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -63,7 +69,7 @@ const Checkout = () => {
           email: profile?.email || ''
         }))
       } catch (error) {
-        console.error('Không tải được hồ sơ người dùng:', error)
+        // Keep checkout usable if profile fetch fails.
       }
 
       try {
@@ -95,67 +101,81 @@ const Checkout = () => {
     loadCheckoutData()
   }, [navigate])
 
+  useEffect(() => {
+    const loadProvinces = async () => {
+      setIsLocationLoading(true)
+      try {
+        const provinces = await vietnamProvincesService.getProvinces()
+        setProvinceOptions(Array.isArray(provinces) ? provinces : [])
+      } catch {
+        setProvinceOptions([])
+      } finally {
+        setIsLocationLoading(false)
+      }
+    }
+
+    loadProvinces()
+  }, [])
+
+  useEffect(() => {
+    const province = provinceOptions.find((item) => item.name === formData.city)
+    if (!province?.code) {
+      setDistrictOptions([])
+      return
+    }
+
+    setDistrictOptions(Array.isArray(province.districts) ? province.districts : [])
+  }, [provinceOptions, formData.city])
+
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
   }
 
-  const couponRules = {
-    NEWBIE: {
-      code: 'NEWBIE',
-      description: 'Ưu đãi người mới: giảm 20.000đ cho đơn từ 100.000đ',
-      minOrder: 100000,
-      category: 'product',
-      type: 'fixed',
-      value: 20000
-    },
-    GIAM30K: {
-      code: 'GIAM30K',
-      description: 'Giảm 30.000đ cho đơn từ 300.000đ',
-      minOrder: 300000,
-      category: 'product',
-      type: 'fixed',
-      value: 30000
-    },
-    WELCOME10: {
-      code: 'WELCOME10',
-      description: 'Giảm 10% tối đa 50.000đ cho đơn từ 200.000đ',
-      minOrder: 200000,
-      category: 'product',
-      type: 'percent',
-      value: 10,
-      maxDiscount: 50000
-    },
-    BOOKLOVER: {
-      code: 'BOOKLOVER',
-      description: 'Giảm 50.000đ cho đơn từ 600.000đ',
-      minOrder: 600000,
-      category: 'product',
-      type: 'fixed',
-      value: 50000
-    },
-    FREESHIP20K: {
-      code: 'FREESHIP20K',
-      description: 'Giảm phí vận chuyển 20.000đ cho đơn từ 200.000đ',
-      minOrder: 200000,
-      category: 'shipping',
-      type: 'fixed',
-      value: 20000
-    },
-    SHIP10: {
-      code: 'SHIP10',
-      description: 'Giảm 10% phí vận chuyển cho đơn từ 150.000đ',
-      minOrder: 150000,
-      category: 'shipping',
-      type: 'percent',
-      value: 10
+  useEffect(() => {
+    const loadCoupons = async () => {
+      try {
+        const myCodes = await discountCodeService.getMyCodes()
+        const mappedRules = (Array.isArray(myCodes) ? myCodes : [])
+          .filter((code) => String(code?.status || '').toUpperCase() === 'ASSIGNED')
+          .reduce((acc, code) => {
+            const normalizedCode = String(code?.code || '').trim().toUpperCase()
+            if (!normalizedCode) return acc
+
+            const normalizedCategory = String(code?.category || 'PRODUCT').toUpperCase() === 'SHIPPING'
+              ? 'shipping'
+              : 'product'
+            const normalizedType = String(code?.type || 'FIXED').toUpperCase() === 'PERCENT'
+              ? 'percent'
+              : 'fixed'
+
+            acc[normalizedCode] = {
+              code: normalizedCode,
+              description: code?.description || normalizedCode,
+              minOrder: Number(code?.minOrder || 0),
+              category: normalizedCategory,
+              type: normalizedType,
+              value: Number(code?.value || 0),
+              maxDiscount: code?.maxDiscount != null ? Number(code.maxDiscount) : undefined
+            }
+
+            return acc
+          }, {})
+
+        setCouponRules(mappedRules)
+      } catch {
+        setCouponRules({})
+      }
     }
-  }
+
+    loadCoupons()
+  }, [])
 
   const ownedCoupons = Object.values(couponRules)
+  const shippingCoupons = ownedCoupons.filter((coupon) => coupon.category === 'shipping')
+  const productCoupons = ownedCoupons.filter((coupon) => coupon.category === 'product')
 
   const subtotal = calculateSubtotal()
   const shippingFee = subtotal >= 800000 ? 0 : 30000
-  const cityOptions = ['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Cần Thơ', 'Hải Phòng']
   const isCouponEligible = (coupon) => {
     if (!coupon) return false
     if (subtotal < coupon.minOrder) return false
@@ -185,22 +205,12 @@ const Checkout = () => {
   const shippingFeeAfterDiscount = Math.max(shippingFee - shippingDiscountAmount, 0)
   const total = Math.max(subtotal - productDiscountAmount + shippingFeeAfterDiscount, 0)
 
-  const districtOptionsByCity = {
-    'Hà Nội': ['Hai Bà Trưng', 'Đống Đa', 'Cầu Giấy', 'Hoàn Kiếm'],
-    'TP. Hồ Chí Minh': ['Quận 1', 'Quận 3', 'Phú Nhuận', 'Bình Thạnh'],
-    'Đà Nẵng': ['Hải Châu', 'Thanh Khê', 'Sơn Trà'],
-    'Cần Thơ': ['Ninh Kiều', 'Bình Thủy', 'Cái Răng'],
-    'Hải Phòng': ['Hồng Bàng', 'Lê Chân', 'Ngô Quyền']
-  }
-
-  const districtOptions = districtOptionsByCity[formData.city] || []
-
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const formatAddressFromForm = () => {
-    return [formData.address, formData.ward, formData.district, formData.city]
+    return [formData.address, formData.district, formData.city]
       .filter(Boolean)
       .map((part) => part.trim())
       .filter(Boolean)
@@ -280,7 +290,7 @@ const Checkout = () => {
       return
     }
 
-    if (addressMode === 'new' && (!formData.address || !formData.city)) {
+    if (addressMode === 'new' && (!formData.address || !formData.city || !formData.district)) {
       alert('Vui lòng điền đầy đủ địa chỉ mới!')
       return
     }
@@ -317,6 +327,8 @@ const Checkout = () => {
       phone: normalizedPhone,
       address: fullAddress,
       paymentMethod: paymentMap[formData.paymentMethod] || 'COD',
+      productDiscountCode: appliedProductCoupon?.code || undefined,
+      shippingDiscountCode: appliedShippingCoupon?.code || undefined,
       note: [
         appliedProductCoupon ? `Mã SP: ${appliedProductCoupon.code}` : null,
         appliedShippingCoupon ? `Mã Ship: ${appliedShippingCoupon.code}` : null
@@ -342,6 +354,14 @@ const Checkout = () => {
         })
         setSavedAddresses((prev) => [createdAddress, ...prev.filter((item) => item.id !== createdAddress.id)])
         setSelectedAddressId(String(createdAddress.id))
+      }
+
+      if (appliedProductCoupon?.code) {
+        await discountCodeService.saveMyCode(appliedProductCoupon.code)
+      }
+
+      if (appliedShippingCoupon?.code) {
+        await discountCodeService.saveMyCode(appliedShippingCoupon.code)
       }
 
       const createdOrder = await orderService.createOrder(payload)
@@ -542,7 +562,7 @@ const Checkout = () => {
                 {addressMode === 'existing' && savedAddresses.length === 0 && !isLoadingAddressBook && (
                   <Grid item xs={12}>
                     <Alert severity="info">
-                      Bạn chưa có địa chỉ đã lưu. Hãy chọn "Sử dụng địa chỉ khác" để tiếp tục.
+                      Bạn chưa có địa chỉ đã lưu. Hãy chọn &quot;Sử dụng địa chỉ khác&quot; để tiếp tục.
                     </Alert>
                   </Grid>
                 )}
@@ -582,9 +602,10 @@ const Checkout = () => {
                           handleChange('city', e.target.value)
                           handleChange('district', '')
                         }}
+                        disabled={isLocationLoading}
                       >
-                        {cityOptions.map((city) => (
-                          <MenuItem key={city} value={city}>{city}</MenuItem>
+                        {provinceOptions.map((province) => (
+                          <MenuItem key={province.code} value={province.name}>{province.name}</MenuItem>
                         ))}
                       </TextField>
                     </Grid>
@@ -594,10 +615,13 @@ const Checkout = () => {
                         fullWidth
                         label="Quận/Huyện"
                         value={formData.district}
-                        onChange={(e) => handleChange('district', e.target.value)}
+                        onChange={(e) => {
+                          handleChange('district', e.target.value)
+                        }}
+                        disabled={!formData.city || isLocationLoading}
                       >
                         {districtOptions.map((district) => (
-                          <MenuItem key={district} value={district}>{district}</MenuItem>
+                          <MenuItem key={district.code} value={district.name}>{district.name}</MenuItem>
                         ))}
                       </TextField>
                     </Grid>
@@ -707,7 +731,12 @@ const Checkout = () => {
               <DialogContent dividers>
                 <Typography sx={{ mb: 1, fontWeight: 800 }}>Mã giảm phí vận chuyển</Typography>
                 <Grid container spacing={1.5} sx={{ mb: 2.5 }}>
-                  {ownedCoupons.filter((coupon) => coupon.category === 'shipping').map((coupon) => {
+                  {shippingCoupons.length === 0 && (
+                    <Grid item xs={12}>
+                      <Typography color="text.secondary">Bạn chưa lưu mã nào</Typography>
+                    </Grid>
+                  )}
+                  {shippingCoupons.map((coupon) => {
                     const isSelected = selectedShippingCouponCode === coupon.code
                     const eligible = isCouponEligible(coupon)
                     const previewDiscount = getCouponDiscountValue(coupon)
@@ -751,7 +780,12 @@ const Checkout = () => {
 
                 <Typography sx={{ mb: 1, fontWeight: 800 }}>Mã giảm giá sản phẩm</Typography>
                 <Grid container spacing={1.5}>
-                  {ownedCoupons.filter((coupon) => coupon.category === 'product').map((coupon) => {
+                  {productCoupons.length === 0 && (
+                    <Grid item xs={12}>
+                      <Typography color="text.secondary">Bạn chưa lưu mã nào</Typography>
+                    </Grid>
+                  )}
+                  {productCoupons.map((coupon) => {
                     const isSelected = selectedProductCouponCode === coupon.code
                     const eligible = isCouponEligible(coupon)
                     const previewDiscount = getCouponDiscountValue(coupon)

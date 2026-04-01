@@ -24,12 +24,12 @@ function ModeSelect() {
           color: 'white',
           '&.Mui-focused' : { color: 'white' }
         }}
-      >Mode</InputLabel>
+      >Giao diện</InputLabel>
       <Select
         labelId="label-select-dark-light-mode"
         id="select-dark-light-mode"
         value={mode}
-        label="Mode"
+        label="Giao diện"
         onChange={handleChange}
         sx={{
           color: 'white',
@@ -41,17 +41,17 @@ function ModeSelect() {
       >
         <MenuItem value="light">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <LightModeIcon fontSize='small'/> Light
+            <LightModeIcon fontSize='small'/> Sáng
           </Box>
         </MenuItem>
         <MenuItem value="dark">
           <Box sx ={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <DarkModeOutlinedIcon fontSize='small'/> Dark
+            <DarkModeOutlinedIcon fontSize='small'/> Tối
           </Box>
         </MenuItem>
         <MenuItem value="system">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <SettingsBrightnessIcon fontSize='small'/> System
+            <SettingsBrightnessIcon fontSize='small'/> Theo hệ thống
           </div>
         </MenuItem>
       </Select>

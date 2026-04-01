@@ -66,6 +66,13 @@ const OrderDetailUser = () => {
     }
   }
 
+  const handleGoToReview = () => {
+    const reviewOrderId = orderData?.id || id
+    if (!reviewOrderId) return
+
+    navigate(`/my-orders/${reviewOrderId}/review`, { state: { order: orderData } })
+  }
+
   const calculateSubtotal = () => {
     if (!orderData?.items) return 0
     return orderData.items.reduce((sum, item) => sum + (item.subtotal || item.price * item.quantity), 0)
@@ -189,6 +196,17 @@ const OrderDetailUser = () => {
                       disabled={isConfirmingReceived}
                     >
                       {isConfirmingReceived ? 'Đang xử lý...' : 'Đã nhận được đơn hàng'}
+                    </Button>
+                  </Box>
+                )}
+                {orderData.status === 'RECEIVED' && (
+                  <Box sx={{ pt: 1 }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={handleGoToReview}
+                    >
+                      Đánh giá đơn hàng
                     </Button>
                   </Box>
                 )}

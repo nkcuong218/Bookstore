@@ -1,5 +1,5 @@
 import {
-  Box, Container, Typography, Grid, Button, Divider, Rating, Chip, Paper, Breadcrumbs, Link
+  Box, Container, Typography, Grid, Button, Divider, Rating, Chip, Paper, Breadcrumbs, Link, Avatar
 } from '@mui/material'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -21,7 +21,9 @@ const BookDetail = () => {
   const [isFavorite, setIsFavorite] = useState(false)
   const [book, setBook] = useState(null)
   const [relatedBooks, setRelatedBooks] = useState([])
+  const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
+  const [reviewsLoading, setReviewsLoading] = useState(false)
 
   useEffect(() => {
     const fetchBookData = async () => {
@@ -42,7 +44,7 @@ const BookDetail = () => {
         }
 
         const listResponse = await bookService.getBooks({
-          genre: detail.genre,
+          genre: detail.genres && detail.genres.length > 0 ? detail.genres[0] : undefined,
           page: 0,
           size: 12,
           sortBy: 'newest'
@@ -52,6 +54,16 @@ const BookDetail = () => {
           .filter((b) => b.id !== detail.id)
           .slice(0, 5)
         setRelatedBooks(rel)
+
+        setReviewsLoading(true)
+        try {
+          const reviewResponse = await bookService.getBookReviews(detail.id)
+          setReviews(Array.isArray(reviewResponse) ? reviewResponse : [])
+        } catch {
+          setReviews([])
+        } finally {
+          setReviewsLoading(false)
+        }
       } catch {
         setBook(null)
       } finally {
@@ -128,9 +140,9 @@ const BookDetail = () => {
   if (!book) {
     return (
       <Container sx={{ py: 8, textAlign: 'center' }}>
-        <Typography variant="h4">Book not found</Typography>
+        <Typography variant="h4">Không tìm thấy sách</Typography>
         <Button variant="contained" onClick={() => navigate('/books')} sx={{ mt: 2 }}>
-          Back to Books
+          Quay lại danh sách sách
         </Button>
       </Container>
     )
@@ -155,7 +167,7 @@ const BookDetail = () => {
             onClick={() => navigate('/')}
             sx={{ cursor: 'pointer' }}
           >
-            Home
+            Trang chủ
           </Link>
           <Link
             underline="hover"
@@ -163,26 +175,29 @@ const BookDetail = () => {
             onClick={() => navigate('/books')}
             sx={{ cursor: 'pointer' }}
           >
-            Books
+            Sách
           </Link>
           <Typography color="text.primary">{book.title}</Typography>
         </Breadcrumbs>
 
         {/* Main Content */}
-        <Paper sx={{ p: 4, mb: 4 }}>
-          <Grid container spacing={4}>
+        <Paper sx={{ p: 2.5, mb: 4 }}>
+          <Grid container spacing={3}>
             {/* Left: Book Image */}
             <Grid item xs={12} md={4}>
               <Box sx={{
                 position: 'sticky',
-                top: 20,
+                top: 60,
                 bgcolor: '#f0f0f0',
                 borderRadius: 2,
                 overflow: 'hidden',
                 aspectRatio: '2/3',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                width: 360,
+                marginLeft: 4,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
               }}>
                 <img
                   src={book.coverUrl}
@@ -194,70 +209,82 @@ const BookDetail = () => {
 
             {/* Right: Book Details */}
             <Grid item xs={12} md={8}>
-              {/* Genre Chip */}
-              <Chip
-                label={book.genre}
-                color="primary"
-                size="small"
-                sx={{ mb: 2 }}
-              />
+              {/* Genres Chips */}
+              <Box sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
+                {book.genres && book.genres.length > 0 ? (
+                  book.genres.map((genre) => (
+                    <Chip
+                      key={genre}
+                      label={genre}
+                      color="primary"
+                      size="small"
+                    />
+                  ))
+                ) : (
+                  <Chip
+                    label="Chưa phân loại"
+                    color="default"
+                    size="small"
+                  />
+                )}
+              </Box>
 
               {/* Title */}
-              <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                 {book.title}
               </Typography>
 
               {/* Author */}
-              <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-                by {book.author}
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Tác giả: {book.author}
               </Typography>
 
               {/* Rating */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <Rating value={book.rating} precision={0.1} readOnly />
                 <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                   {book.rating}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  ({book.reviews?.toLocaleString()} reviews)
+                  ({book.reviews?.toLocaleString()} lượt đánh giá)
                 </Typography>
               </Box>
 
               <Divider sx={{ my: 3 }} />
 
               {/* Price */}
-              <Typography variant="h4" color="primary.main" sx={{ fontWeight: 'bold', mb: 3 }}>
+              <Typography variant="h5" color="primary.main" sx={{ fontWeight: 'bold', mb: 1.5 }}>
                 {formatPrice(book.price)}
               </Typography>
 
               {/* Stock Status */}
               {book.inStock && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3, color: 'success.main' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, color: 'success.main' }}>
                   <CheckCircleOutlineIcon />
-                  <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                    In Stock
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    Còn hàng
                   </Typography>
                 </Box>
               )}
 
               {/* Quantity Selector */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                 <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  Quantity:
+                  Số lượng:
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: 1 }}>
                   <Button
                     onClick={() => handleQuantityChange('decrease')}
-                    sx={{ minWidth: 40, py: 1 }}
+                    sx={{ minWidth: 32, py: 0.5, fontSize: '0.9rem' }}
                   >
                     -
                   </Button>
-                  <Typography sx={{ px: 3, py: 1, minWidth: 50, textAlign: 'center' }}>
+                  <Typography sx={{ px: 2, py: 0.5, minWidth: 40, textAlign: 'center', fontSize: '0.9rem' }}>
                     {quantity}
                   </Typography>
                   <Button
                     onClick={() => handleQuantityChange('increase')}
-                    sx={{ minWidth: 40, py: 1 }}
+                    sx={{ minWidth: 32, py: 0.5, fontSize: '0.9rem' }}
                   >
                     +
                   </Button>
@@ -265,21 +292,21 @@ const BookDetail = () => {
               </Box>
 
               {/* Action Buttons */}
-              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+              <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5 }}>
                 <Button
                   variant="contained"
-                  size="large"
+                  size="medium"
                   startIcon={<ShoppingCartIcon />}
                   onClick={handleAddToCart}
-                  sx={{ flex: 1, py: 1.5, fontSize: '1.1rem' }}
+                  sx={{ flex: 1, fontSize: '0.95rem' }}
                 >
-                  ADD TO CART
+                  THÊM VÀO GIỎ HÀNG
                 </Button>
                 <Button
                   variant="outlined"
-                  size="large"
+                  size="medium"
                   onClick={handleToggleWishlist}
-                  sx={{ minWidth: 60 }}
+                  sx={{ minWidth: 50 }}
                 >
                   {isFavorite ? <FavoriteIcon color="error" /> : <FavoriteBorderIcon />}
                 </Button>
@@ -288,54 +315,54 @@ const BookDetail = () => {
               {/* Shipping Info */}
               <Box sx={{
                 bgcolor: '#f5f5f5',
-                p: 2,
+                p: 1.5,
                 borderRadius: 1,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
-                mb: 3
+                mb: 1.5
               }}>
                 <LocalShippingOutlinedIcon color="primary" />
                 <Typography variant="body2">
-                  <strong>Free Shipping</strong> on orders over $40
+                  <strong>Miễn phí vận chuyển</strong> cho đơn hàng từ 40$ trở lên
                 </Typography>
               </Box>
 
-              <Divider sx={{ my: 3 }} />
+              <Divider sx={{ my: 1.5 }} />
 
               {/* Book Information */}
-              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                About This Book
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                Giới thiệu sách
               </Typography>
-              <Typography variant="body1" paragraph sx={{ lineHeight: 1.8, color: 'text.secondary' }}>
+              <Typography variant="body2" paragraph sx={{ lineHeight: 1.6, color: 'text.secondary' }}>
                 {book.description}
               </Typography>
 
               {/* Product Details */}
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                  Product Details
+              <Box sx={{ mt: 1.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Thông tin sách
                 </Typography>
-                <Grid container spacing={2}>
+                <Grid container spacing={1}>
                   <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">ISBN:</Typography>
-                    <Typography variant="body1" sx={{ mb: 1 }}>{book.isbn}</Typography>
+                    <Typography variant="caption" color="text.secondary">Mã ISBN:</Typography>
+                    <Typography variant="body2" sx={{ mb: 0.5 }}>{book.isbn}</Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Pages:</Typography>
-                    <Typography variant="body1" sx={{ mb: 1 }}>{book.pages}</Typography>
+                    <Typography variant="caption" color="text.secondary">Số trang:</Typography>
+                    <Typography variant="body2" sx={{ mb: 0.5 }}>{book.pages}</Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Publisher:</Typography>
-                    <Typography variant="body1" sx={{ mb: 1 }}>{book.publisher}</Typography>
+                    <Typography variant="caption" color="text.secondary">Nhà xuất bản:</Typography>
+                    <Typography variant="body2" sx={{ mb: 0.5 }}>{book.publisher}</Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Year Published:</Typography>
-                    <Typography variant="body1" sx={{ mb: 1 }}>{book.yearPublished || 'N/A'}</Typography>
+                    <Typography variant="caption" color="text.secondary">Năm xuất bản:</Typography>
+                    <Typography variant="body2" sx={{ mb: 0.5 }}>{book.yearPublished || 'N/A'}</Typography>
                   </Grid>
                   <Grid item xs={6}>
-                    <Typography variant="body2" color="text.secondary">Language:</Typography>
-                    <Typography variant="body1" sx={{ mb: 1 }}>{book.language}</Typography>
+                    <Typography variant="caption" color="text.secondary">Ngôn ngữ:</Typography>
+                    <Typography variant="body2" sx={{ mb: 0.5 }}>{book.language}</Typography>
                   </Grid>
                 </Grid>
               </Box>
@@ -346,10 +373,10 @@ const BookDetail = () => {
         {/* Related Books */}
         {relatedBooks.length > 0 && (
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
-              You May Also Like
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1.5 }}>
+              Có thể bạn cũng thích
             </Typography>
-            <Grid container spacing={3}>
+            <Grid container spacing={2}>
               {relatedBooks.map((relatedBook) => (
                 <Grid item xs={12} sm={6} md={4} lg={2.4} key={relatedBook.id}>
                   <BookCard
@@ -364,6 +391,55 @@ const BookDetail = () => {
             </Grid>
           </Box>
         )}
+
+        {/* Reviews */}
+        <Box sx={{ mt: 6 }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+            Đánh giá từ khách hàng
+          </Typography>
+
+          {reviewsLoading ? (
+            <Paper sx={{ p: 3, textAlign: 'center' }}>
+              <Typography color="text.secondary">Đang tải đánh giá...</Typography>
+            </Paper>
+          ) : reviews.length > 0 ? (
+            <Grid container spacing={2}>
+              {reviews.map((review) => (
+                <Grid item xs={12} key={review.id}>
+                  <Paper sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                      <Avatar sx={{ bgcolor: 'primary.main', width: 44, height: 44 }}>
+                        {(review.userName || 'K').charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                          <Box>
+                            <Typography sx={{ fontWeight: 700 }}>
+                              {review.userName || 'Khách hàng'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : ''}
+                            </Typography>
+                          </Box>
+                          <Rating value={review.rating || 0} readOnly />
+                        </Box>
+                        <Typography variant="body2" sx={{ mt: 1.5, lineHeight: 1.7 }}>
+                          {review.comment}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Paper sx={{ p: 3 }}>
+              <Typography color="text.secondary">
+                Sách này chưa có đánh giá nào. Hãy là người đầu tiên chia sẻ cảm nhận của bạn.
+              </Typography>
+            </Paper>
+          )}
+        </Box>
       </Container>
     </Box>
   )

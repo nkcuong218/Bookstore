@@ -24,10 +24,7 @@ public class Book {
     @Column(nullable = false)
     private Long price;
 
-        // Legacy single genre field kept for backward compatibility.
-    private String genre;
-
-        @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY)
         @JoinTable(
             name = "book_genres",
             joinColumns = @JoinColumn(name = "book_id"),

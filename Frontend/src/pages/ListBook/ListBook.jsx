@@ -4,9 +4,11 @@ import { useLocation } from 'react-router-dom'
 import BookCard from '../../components/BookCard/BookCard'
 import bookService from '../../apis/bookService'
 
+const allLabel = 'Tất cả'
+
 const ListBook = () => {
   const location = useLocation()
-  const [selectedGenre, setSelectedGenre] = useState('All')
+  const [selectedGenre, setSelectedGenre] = useState(allLabel)
   const [sortBy, setSortBy] = useState('featured')
   const [books, setBooks] = useState([])
   const [genres, setGenres] = useState([])
@@ -19,7 +21,7 @@ const ListBook = () => {
     if (genreFromQuery) {
       setSelectedGenre(genreFromQuery)
     } else {
-      setSelectedGenre('All')
+      setSelectedGenre(allLabel)
     }
   }, [genreFromQuery])
 
@@ -49,7 +51,7 @@ const ListBook = () => {
 
         const response = await bookService.getBooks({
           keyword: keyword || undefined,
-          genre: selectedGenre === 'All' ? undefined : selectedGenre,
+          genre: selectedGenre === allLabel ? undefined : selectedGenre,
           page: 0,
           size: 100,
           sortBy: sortMap[sortBy] || 'newest'
@@ -77,12 +79,12 @@ const ListBook = () => {
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
-            {keyword ? `Kết quả cho "${keyword}"` : 'All Books'}
+            {keyword ? `Kết quả cho "${keyword}"` : 'Tất cả sách'}
           </Typography>
           <Typography variant="body1" color="text.secondary">
             {keyword
               ? `Tìm thấy ${books.length} sách phù hợp`
-              : `Discover our collection of ${books.length} amazing books`}
+              : `Khám phá bộ sưu tập ${books.length} cuốn sách tuyệt vời của chúng tôi`}
           </Typography>
         </Box>
 
@@ -102,10 +104,10 @@ const ListBook = () => {
           {/* Genre Filters */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip
-              label="All"
-              onClick={() => setSelectedGenre('All')}
-              color={selectedGenre === 'All' ? 'primary' : 'default'}
-              sx={{ fontWeight: selectedGenre === 'All' ? 'bold' : 'normal' }}
+              label={allLabel}
+              onClick={() => setSelectedGenre(allLabel)}
+              color={selectedGenre === allLabel ? 'primary' : 'default'}
+              sx={{ fontWeight: selectedGenre === allLabel ? 'bold' : 'normal' }}
             />
             {genres.map((genre) => (
               <Chip
@@ -121,17 +123,17 @@ const ListBook = () => {
           {/* Sort Dropdown */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-              Sort by:
+              Sắp xếp theo:
             </Typography>
             <FormControl size="small" sx={{ minWidth: 180 }}>
               <Select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
-                <MenuItem value="featured">Featured</MenuItem>
-                <MenuItem value="title">Title (A-Z)</MenuItem>
-                <MenuItem value="price-low">Price: Low to High</MenuItem>
-                <MenuItem value="price-high">Price: High to Low</MenuItem>
+                <MenuItem value="featured">Nổi bật</MenuItem>
+                <MenuItem value="title">Tên sách (A-Z)</MenuItem>
+                <MenuItem value="price-low">Giá: Thấp đến cao</MenuItem>
+                <MenuItem value="price-high">Giá: Cao đến thấp</MenuItem>
               </Select>
             </FormControl>
           </Box>
@@ -161,7 +163,7 @@ const ListBook = () => {
         ) : (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <Typography variant="h6" color="text.secondary">
-              No books found in this category
+              Không tìm thấy sách trong danh mục này
             </Typography>
           </Box>
         )}

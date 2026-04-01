@@ -8,7 +8,10 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +20,8 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final DiscountCodeRepository discountCodeRepository;
+    private final UserDiscountCodeRepository userDiscountCodeRepository;
 
     @Transactional
     public OrderDto.Response createOrder(OrderDto.CreateRequest req, Long userId) {
@@ -53,7 +58,17 @@ public class OrderService {
         }
 
         long shippingFee = subtotal >= 800000 ? 0 : 30000;
-        long totalAmount = subtotal + shippingFee;
+        DiscountUsageResult discountUsage = validateAndConsumeDiscountCodes(
+            user,
+            req.getProductDiscountCode(),
+            req.getShippingDiscountCode(),
+            subtotal,
+            shippingFee
+        );
+
+        long shippingFeeAfterDiscount = Math.max(shippingFee - discountUsage.shippingDiscountAmount, 0L);
+        long totalDiscount = discountUsage.productDiscountAmount + discountUsage.shippingDiscountAmount;
+        long totalAmount = Math.max(subtotal - discountUsage.productDiscountAmount + shippingFeeAfterDiscount, 0L);
 
         // Generate order code
         long count = orderRepository.count() + 1;
@@ -76,8 +91,10 @@ public class OrderService {
                 .status(Order.Status.PENDING)
                 .paymentMethod(paymentMethod)
                 .note(req.getNote())
-                .shippingFee(shippingFee)
-                .discount(0L)
+                .productDiscountCode(discountUsage.productDiscountCode)
+                .shippingDiscountCode(discountUsage.shippingDiscountCode)
+                .shippingFee(shippingFeeAfterDiscount)
+                .discount(totalDiscount)
                 .totalAmount(totalAmount)
                 .build();
 
@@ -90,6 +107,109 @@ public class OrderService {
         order = orderRepository.save(order);
 
         return OrderDto.Response.fromEntity(order);
+    }
+
+    private DiscountUsageResult validateAndConsumeDiscountCodes(
+            User user,
+            String productCodeRaw,
+            String shippingCodeRaw,
+            long subtotal,
+            long shippingFee
+    ) {
+        String productCode = normalizeCode(productCodeRaw);
+        String shippingCode = normalizeCode(shippingCodeRaw);
+
+        Set<String> uniqueCodes = new LinkedHashSet<>();
+        if (productCode != null) uniqueCodes.add(productCode);
+        if (shippingCode != null) uniqueCodes.add(shippingCode);
+
+        java.util.Map<String, DiscountCode> codeMap = new java.util.HashMap<>();
+
+        for (String code : uniqueCodes) {
+            DiscountCode discountCode = discountCodeRepository.findByCodeIgnoreCaseAndActiveTrue(code)
+                    .orElseThrow(() -> new RuntimeException("Mã giảm giá không tồn tại hoặc đã bị khóa: " + code));
+
+            if (discountCode.getExpiresAt() != null && discountCode.getExpiresAt().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("Mã giảm giá đã hết hạn: " + code);
+            }
+
+            UserDiscountCode userDiscountCode = userDiscountCodeRepository.findByUserAndDiscountCode(user, discountCode)
+                    .orElseThrow(() -> new RuntimeException("Bạn chưa lưu mã giảm giá: " + code));
+
+            if (userDiscountCode.getStatus() == UserDiscountCode.Status.USED) {
+                throw new RuntimeException("Mã giảm giá đã được sử dụng: " + code);
+            }
+
+            userDiscountCode.setStatus(UserDiscountCode.Status.USED);
+            userDiscountCode.setUsedAt(LocalDateTime.now());
+            userDiscountCodeRepository.save(userDiscountCode);
+
+            codeMap.put(code, discountCode);
+        }
+
+        long productDiscountAmount = 0L;
+        if (productCode != null) {
+            DiscountCode productCodeEntity = codeMap.get(productCode);
+            if (productCodeEntity.getCategory() != DiscountCode.Category.PRODUCT) {
+                throw new RuntimeException("Mã " + productCode + " không phải mã giảm giá sản phẩm");
+            }
+            if (subtotal < productCodeEntity.getMinOrder()) {
+                throw new RuntimeException("Mã " + productCode + " yêu cầu đơn tối thiểu " + productCodeEntity.getMinOrder());
+            }
+            productDiscountAmount = calculateDiscount(productCodeEntity, subtotal);
+        }
+
+        long shippingDiscountAmount = 0L;
+        if (shippingCode != null) {
+            DiscountCode shippingCodeEntity = codeMap.get(shippingCode);
+            if (shippingCodeEntity.getCategory() != DiscountCode.Category.SHIPPING) {
+                throw new RuntimeException("Mã " + shippingCode + " không phải mã giảm phí vận chuyển");
+            }
+            if (shippingFee <= 0) {
+                throw new RuntimeException("Đơn hàng đã miễn phí vận chuyển, không thể áp mã ship");
+            }
+            if (subtotal < shippingCodeEntity.getMinOrder()) {
+                throw new RuntimeException("Mã " + shippingCode + " yêu cầu đơn tối thiểu " + shippingCodeEntity.getMinOrder());
+            }
+            shippingDiscountAmount = calculateDiscount(shippingCodeEntity, shippingFee);
+        }
+
+        DiscountUsageResult result = new DiscountUsageResult();
+        result.productDiscountCode = productCode;
+        result.shippingDiscountCode = shippingCode;
+        result.productDiscountAmount = productDiscountAmount;
+        result.shippingDiscountAmount = shippingDiscountAmount;
+        return result;
+    }
+
+    private long calculateDiscount(DiscountCode code, long baseAmount) {
+        if (baseAmount <= 0) {
+            return 0L;
+        }
+
+        if (code.getType() == DiscountCode.Type.FIXED) {
+            return Math.min(code.getValue(), baseAmount);
+        }
+
+        long calculated = Math.round((double) baseAmount * code.getValue() / 100.0);
+        long capped = code.getMaxDiscount() == null ? calculated : Math.min(calculated, code.getMaxDiscount());
+        return Math.min(capped, baseAmount);
+    }
+
+    private static class DiscountUsageResult {
+        private String productDiscountCode;
+        private String shippingDiscountCode;
+        private long productDiscountAmount;
+        private long shippingDiscountAmount;
+    }
+
+    private String normalizeCode(String rawCode) {
+        if (rawCode == null) {
+            return null;
+        }
+
+        String trimmed = rawCode.trim();
+        return trimmed.isEmpty() ? null : trimmed.toUpperCase();
     }
 
     public List<OrderDto.Response> getMyOrders(Long userId) {

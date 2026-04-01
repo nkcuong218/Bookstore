@@ -289,7 +289,9 @@ const WishList = () => {
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                         {item.author}
                       </Typography>
-                      <Chip label={item.genre} size="small" variant="outlined" sx={{ mb: 1, fontSize: '0.7rem' }} />
+                      {item.genres && item.genres.length > 0 && (
+                        <Chip label={item.genres[0]} size="small" variant="outlined" sx={{ mb: 1, fontSize: '0.7rem' }} />
+                      )}
                       <Typography variant="h6" color="primary.main" sx={{ fontWeight: 'bold' }}>
                         {formatPrice(item.price)}
                       </Typography>

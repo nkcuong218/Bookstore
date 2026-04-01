@@ -36,6 +36,9 @@ public class Order {
 
     private String note;
 
+    private String productDiscountCode;
+    private String shippingDiscountCode;
+
     private Long shippingFee = 0L;
     private Long discount = 0L;
     private Long totalAmount;

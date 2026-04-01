@@ -14,6 +14,7 @@ import WishList from './pages/WishList/WishList'
 import Checkout from './pages/Order/Checkout'
 import MyOrders from './pages/Order/MyOrders'
 import OrderDetailUser from './pages/Order/OrderDetailUser'
+import OrderReview from './pages/Order/OrderReview'
 import UserProfile from './pages/User/UserProfile'
 
 // Admin
@@ -27,6 +28,7 @@ import OrderDetail from './pages/Admin/OrderDetail'
 import UsersManagement from './pages/Admin/UsersManagement'
 import AddUser from './pages/Admin/AddUser'
 import EditUser from './pages/Admin/EditUser'
+import DiscountCodesManagement from './pages/Admin/DiscountCodesManagement'
 import authService from './apis/authService'
 
 // Protected Route Component
@@ -135,6 +137,16 @@ function App() {
           </Box>
         } />
 
+        <Route path="/my-orders/:id/review" element={
+          <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <Header />
+            <Box sx={{ flexGrow: 1 }}>
+              <OrderReview />
+            </Box>
+            <Footer />
+          </Box>
+        } />
+
         <Route path="/profile" element={
           <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <Header />
@@ -183,6 +195,7 @@ function App() {
           <Route path="users" element={<UsersManagement />} />
           <Route path="users/add" element={<AddUser />} />
           <Route path="users/edit/:id" element={<EditUser />} />
+          <Route path="discount-codes" element={<DiscountCodesManagement />} />
           <Route path="categories" element={
             <Box sx={{ textAlign: 'center', py: 8 }}>
               <h2>Quản lý thể loại</h2>
