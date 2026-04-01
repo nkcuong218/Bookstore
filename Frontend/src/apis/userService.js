@@ -7,7 +7,7 @@ const userService = {
    * @returns {Promise<Object>} User profile
    */
   getProfile: async () => {
-    return apiClient.get('/api/profile')
+    return apiClient.get('/api/profile', { authScope: 'customer' })
   },
 
   /**
@@ -16,7 +16,7 @@ const userService = {
    * @returns {Promise<Object>} Updated profile
    */
   updateProfile: async (data) => {
-    const response = await apiClient.put('/api/profile', data)
+    const response = await apiClient.put('/api/profile', data, { authScope: 'customer' })
 
     // Cập nhật localStorage nếu thành công
     const currentUser = authService.getCurrentUser('customer') || {}

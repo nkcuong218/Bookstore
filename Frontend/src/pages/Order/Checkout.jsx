@@ -1,16 +1,28 @@
 import {
   Box, Container, Typography, Grid, Button, Paper, TextField,
-  Divider, RadioGroup, FormControlLabel, Radio, Breadcrumbs, Link
+  Divider, RadioGroup, FormControlLabel, Radio, Breadcrumbs, Link,
+  Alert, Checkbox, CircularProgress, MenuItem
 } from '@mui/material'
-import { useState } from 'react'
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { formatPrice } from '../../utils/formatPrice'
 import orderService from '../../apis/orderService'
+import userService from '../../apis/userService'
+import addressService from '../../apis/addressService'
 
 const Checkout = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const cartItems = location.state?.cartItems || []
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoadingAddressBook, setIsLoadingAddressBook] = useState(true)
+  const [addressError, setAddressError] = useState('')
+  const [savedAddresses, setSavedAddresses] = useState([])
+  const [addressMode, setAddressMode] = useState('existing')
+  const [selectedAddressId, setSelectedAddressId] = useState('')
+  const [saveNewAddress, setSaveNewAddress] = useState(true)
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -20,9 +32,62 @@ const Checkout = () => {
     city: '',
     district: '',
     ward: '',
-    paymentMethod: 'COD',
-    note: ''
+    paymentMethod: 'COD'
   })
+
+  const selectedAddress = useMemo(() => {
+    if (!selectedAddressId) return null
+    return savedAddresses.find((addr) => String(addr.id) === String(selectedAddressId)) || null
+  }, [savedAddresses, selectedAddressId])
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      navigate('/login', { replace: true })
+      return
+    }
+
+    const loadCheckoutData = async () => {
+      setAddressError('')
+      setIsLoadingAddressBook(true)
+      try {
+        const profile = await userService.getProfile()
+        setFormData((prev) => ({
+          ...prev,
+          email: profile?.email || ''
+        }))
+      } catch (error) {
+        console.error('Không tải được hồ sơ người dùng:', error)
+      }
+
+      try {
+        const addresses = await addressService.getMyAddresses()
+
+        const normalized = Array.isArray(addresses) ? addresses : []
+        setSavedAddresses(normalized)
+
+        if (normalized.length > 0) {
+          const defaultAddress = normalized.find((addr) => addr.isDefault) || normalized[0]
+          setAddressMode('existing')
+          setSelectedAddressId(String(defaultAddress.id))
+        } else {
+          setAddressMode('new')
+        }
+      } catch (error) {
+        const message = error?.message || ''
+        const isNotFound = message === 'Not Found' || message.includes('HTTP 404')
+        setSavedAddresses([])
+        setAddressMode('new')
+        if (!isNotFound) {
+          setAddressError('Không tải được danh sách địa chỉ. Bạn có thể nhập địa chỉ mới để tiếp tục.')
+        }
+      } finally {
+        setIsLoadingAddressBook(false)
+      }
+    }
+
+    loadCheckoutData()
+  }, [navigate])
 
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
@@ -31,23 +96,35 @@ const Checkout = () => {
   const subtotal = calculateSubtotal()
   const shippingFee = subtotal >= 800000 ? 0 : 30000
   const total = subtotal + shippingFee
+  const cityOptions = ['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Cần Thơ', 'Hải Phòng']
+
+  const districtOptionsByCity = {
+    'Hà Nội': ['Hai Bà Trưng', 'Đống Đa', 'Cầu Giấy', 'Hoàn Kiếm'],
+    'TP. Hồ Chí Minh': ['Quận 1', 'Quận 3', 'Phú Nhuận', 'Bình Thạnh'],
+    'Đà Nẵng': ['Hải Châu', 'Thanh Khê', 'Sơn Trà'],
+    'Cần Thơ': ['Ninh Kiều', 'Bình Thủy', 'Cái Răng'],
+    'Hải Phòng': ['Hồng Bàng', 'Lê Chân', 'Ngô Quyền']
+  }
+
+  const districtOptions = districtOptionsByCity[formData.city] || []
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmitOrder = async () => {
-    // Validate form
-    if (!formData.fullName || !formData.email || !formData.phone ||
-        !formData.address || !formData.city) {
-      alert('Vui lòng điền đầy đủ thông tin!')
-      return
-    }
+  const formatAddressFromForm = () => {
+    return [formData.address, formData.ward, formData.district, formData.city]
+      .filter(Boolean)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join(', ')
+  }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      alert('Email không hợp lệ!')
+  const handleSubmitOrder = async () => {
+    if (isSubmitting) return
+
+    if (addressMode === 'new' && (!formData.fullName || !formData.phone)) {
+      alert('Vui lòng điền đầy đủ họ tên và số điện thoại!')
       return
     }
 
@@ -58,9 +135,19 @@ const Checkout = () => {
       return
     }
 
-    const fullAddress = [formData.address, formData.ward, formData.district, formData.city]
-      .filter(Boolean)
-      .join(', ')
+    if (addressMode === 'existing' && !selectedAddress) {
+      alert('Vui lòng chọn địa chỉ giao hàng có sẵn!')
+      return
+    }
+
+    if (addressMode === 'new' && (!formData.address || !formData.city)) {
+      alert('Vui lòng điền đầy đủ địa chỉ mới!')
+      return
+    }
+
+    const fullAddress = addressMode === 'existing'
+      ? selectedAddress.fullAddress
+      : formatAddressFromForm()
 
     const paymentMap = {
       COD: 'COD',
@@ -70,12 +157,15 @@ const Checkout = () => {
     }
 
     const payload = {
-      customerName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
+      customerName: addressMode === 'existing'
+        ? (selectedAddress?.recipientName || formData.fullName)
+        : formData.fullName,
+      email: formData.email || '',
+      phone: addressMode === 'existing'
+        ? (selectedAddress?.phone || formData.phone)
+        : formData.phone,
       address: fullAddress,
       paymentMethod: paymentMap[formData.paymentMethod] || 'COD',
-      note: formData.note,
       items: cartItems.map((item) => ({
         bookId: item.id,
         quantity: item.quantity
@@ -83,6 +173,22 @@ const Checkout = () => {
     }
 
     try {
+      setIsSubmitting(true)
+
+      if (addressMode === 'new' && saveNewAddress) {
+        const createdAddress = await addressService.createAddress({
+          recipientName: formData.fullName,
+          phone: formData.phone,
+          addressLine: formData.address,
+          ward: formData.ward,
+          district: formData.district,
+          city: formData.city,
+          setDefault: true
+        })
+        setSavedAddresses((prev) => [createdAddress, ...prev.filter((item) => item.id !== createdAddress.id)])
+        setSelectedAddressId(String(createdAddress.id))
+      }
+
       const createdOrder = await orderService.createOrder(payload)
       localStorage.removeItem('cart')
       window.dispatchEvent(new Event('cart-updated'))
@@ -95,6 +201,8 @@ const Checkout = () => {
       })
     } catch (error) {
       alert(error.message || 'Đặt hàng thất bại!')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -149,87 +257,235 @@ const Checkout = () => {
         <Grid container spacing={4}>
           {/* Left: Checkout Form */}
           <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                Thông tin giao hàng
-              </Typography>
+            <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
+                <Box
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: '50%',
+                    bgcolor: '#0f172a',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  1
+                </Box>
+                <PlaceOutlinedIcon sx={{ color: '#d03d3d', fontSize: 24 }} />
+                <Typography sx={{ fontSize: '1.85rem', fontWeight: 900, letterSpacing: 0.4 }}>
+                  ĐỊA CHỈ NHẬN HÀNG
+                </Typography>
+              </Box>
+
+              <Divider sx={{ mb: 2.5 }} />
+
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Họ và tên"
-                    required
-                    value={formData.fullName}
-                    onChange={(e) => handleChange('fullName', e.target.value)}
-                  />
+                  <Grid container spacing={2}>
+                    {savedAddresses.map((addr) => {
+                      const isActive =
+                        addressMode === 'existing' && String(addr.id) === String(selectedAddressId)
+
+                      return (
+                        <Grid item xs={12} key={addr.id}>
+                          <Paper
+                            variant="outlined"
+                            onClick={() => {
+                              setAddressMode('existing')
+                              setSelectedAddressId(String(addr.id))
+                            }}
+                            sx={{
+                              p: 2,
+                              cursor: 'pointer',
+                              borderRadius: 2,
+                              borderWidth: 1,
+                              borderColor: isActive ? '#4677d8' : '#d6d7db',
+                              bgcolor: '#fff',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Radio
+                                checked={isActive}
+                                onChange={() => {
+                                  setAddressMode('existing')
+                                  setSelectedAddressId(String(addr.id))
+                                }}
+                                value={addr.id}
+                                sx={{ p: 0.5 }}
+                              />
+
+                              <Box sx={{ flex: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                  <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', lineHeight: 1.2 }}>
+                                    {addr.recipientName}
+                                  </Typography>
+                                  <Typography sx={{ color: '#4b5563', fontWeight: 500, fontSize: '1rem' }}>
+                                    {addr.phone}
+                                  </Typography>
+                                  {addr.isDefault && (
+                                    <Box
+                                      sx={{
+                                        px: 1.1,
+                                        py: 0.25,
+                                        borderRadius: 10,
+                                        bgcolor: '#efeff0',
+                                        color: '#3f3f46',
+                                        fontSize: '0.82rem',
+                                        fontWeight: 600,
+                                        lineHeight: 1.2
+                                      }}
+                                    >
+                                      Mặc định
+                                    </Box>
+                                  )}
+                                </Box>
+
+                                <Typography sx={{ mt: 0.6, color: '#4b5563', fontSize: '1.02rem' }}>
+                                  {addr.fullAddress}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Paper>
+                        </Grid>
+                      )
+                    })}
+
+                    <Grid item xs={12}>
+                      <Paper
+                        variant="outlined"
+                        onClick={() => setAddressMode('new')}
+                        sx={{
+                          p: 2,
+                          cursor: 'pointer',
+                          borderRadius: 2,
+                          borderWidth: 1,
+                          borderColor: addressMode === 'new' ? '#d03d3d' : '#d6d7db',
+                          bgcolor: '#fffafa'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Radio
+                            checked={addressMode === 'new'}
+                            onChange={() => setAddressMode('new')}
+                            value="new"
+                            sx={{ p: 0.5 }}
+                          />
+                          <Typography sx={{ fontWeight: 800, fontSize: '1.15rem' }}>
+                            Sử dụng địa chỉ khác
+                          </Typography>
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => handleChange('email', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Số điện thoại"
-                    required
-                    value={formData.phone}
-                    onChange={(e) => handleChange('phone', e.target.value)}
-                    placeholder="0901234567"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Địa chỉ"
-                    required
-                    value={formData.address}
-                    onChange={(e) => handleChange('address', e.target.value)}
-                    placeholder="Số nhà, tên đường"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Phường/Xã"
-                    value={formData.ward}
-                    onChange={(e) => handleChange('ward', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Quận/Huyện"
-                    value={formData.district}
-                    onChange={(e) => handleChange('district', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <TextField
-                    fullWidth
-                    label="Tỉnh/Thành phố"
-                    required
-                    value={formData.city}
-                    onChange={(e) => handleChange('city', e.target.value)}
-                    placeholder="TP. Hồ Chí Minh"
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Ghi chú"
-                    multiline
-                    rows={3}
-                    value={formData.note}
-                    onChange={(e) => handleChange('note', e.target.value)}
-                    placeholder="Ghi chú về đơn hàng (tuỳ chọn)"
-                  />
-                </Grid>
+
+                {isLoadingAddressBook && (
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CircularProgress size={18} />
+                      <Typography variant="body2" color="text.secondary">
+                        Đang tải sổ địa chỉ...
+                      </Typography>
+                    </Box>
+                  </Grid>
+                )}
+
+                {addressError && (
+                  <Grid item xs={12}>
+                    <Alert severity="warning">{addressError}</Alert>
+                  </Grid>
+                )}
+
+                {addressMode === 'existing' && savedAddresses.length === 0 && !isLoadingAddressBook && (
+                  <Grid item xs={12}>
+                    <Alert severity="info">
+                      Bạn chưa có địa chỉ đã lưu. Hãy chọn "Sử dụng địa chỉ khác" để tiếp tục.
+                    </Alert>
+                  </Grid>
+                )}
+
+                {addressMode === 'new' && (
+                  <>
+                    <Grid item xs={12}>
+                      <Divider sx={{ mt: 0.5 }} />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Họ tên *"
+                        required
+                        value={formData.fullName}
+                        onChange={(e) => handleChange('fullName', e.target.value)}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="SĐT *"
+                        required
+                        value={formData.phone}
+                        onChange={(e) => handleChange('phone', e.target.value)}
+                        placeholder="0901234567"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Tỉnh/Thành"
+                        value={formData.city}
+                        onChange={(e) => {
+                          handleChange('city', e.target.value)
+                          handleChange('district', '')
+                        }}
+                      >
+                        {cityOptions.map((city) => (
+                          <MenuItem key={city} value={city}>{city}</MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Quận/Huyện"
+                        value={formData.district}
+                        onChange={(e) => handleChange('district', e.target.value)}
+                      >
+                        {districtOptions.map((district) => (
+                          <MenuItem key={district} value={district}>{district}</MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Địa chỉ *"
+                        required
+                        value={formData.address}
+                        onChange={(e) => handleChange('address', e.target.value)}
+                        placeholder="Số nhà, tên đường"
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControlLabel
+                        control={(
+                          <Checkbox
+                            checked={saveNewAddress}
+                            onChange={(e) => setSaveNewAddress(e.target.checked)}
+                          />
+                        )}
+                        label="Lưu địa chỉ này cho lần mua tiếp theo"
+                      />
+                    </Grid>
+                  </>
+                )}
               </Grid>
             </Paper>
 
@@ -338,9 +594,10 @@ const Checkout = () => {
                 fullWidth
                 size="large"
                 onClick={handleSubmitOrder}
+                disabled={isSubmitting}
                 sx={{ py: 1.5, fontSize: '1.1rem' }}
               >
-                Đặt hàng
+                {isSubmitting ? 'Đang xử lý...' : 'Đặt hàng'}
               </Button>
             </Paper>
           </Grid>

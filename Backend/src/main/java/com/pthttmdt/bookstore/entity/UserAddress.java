@@ -2,37 +2,44 @@ package com.pthttmdt.bookstore.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class .0User {
+@Table(name = "user_addresses")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class UserAddress {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String fullName;
-
-    @Column(nullable = false, unique = true)
-    private String email;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false)
-    private String password;
+    private String recipientName;
 
+    @Column(nullable = false)
     private String phone;
 
-    private String address;
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Role role = Role.CUSTOMER;
+    private String addressLine;
 
-    @Enumerated(EnumType.STRING)
+    private String ward;
+
+    private String district;
+
     @Column(nullable = false)
-    private Status status = Status.ACTIVE;
+    private String city;
+
+    @Column(nullable = false)
+    private Boolean isDefault = false;
 
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -48,13 +55,5 @@ public class .0User {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    public enum Role {
-        CUSTOMER, ADMIN
-    }
-
-    public enum Status {
-        ACTIVE, BLOCKED
     }
 }
