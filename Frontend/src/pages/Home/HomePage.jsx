@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BookCard from '../../components/BookCard/BookCard'
 import bookService from '../../apis/bookService'
+import genreService from '../../apis/genreService'
 
 const HomePage = () => {
   const navigate = useNavigate()
@@ -14,7 +15,7 @@ const HomePage = () => {
       try {
         const [featuredBooks, allGenres] = await Promise.all([
           bookService.getFeaturedBooks(),
-          bookService.getGenres()
+          genreService.getGenres()
         ])
         setBooks(featuredBooks || [])
         setGenres(allGenres || [])
@@ -60,7 +61,7 @@ const HomePage = () => {
       <Container maxWidth="xl" sx={{ my: 6 }}>
         <Grid container spacing={2} justifyContent="center">
           {genres.map((genre) => (
-            <Grid item key={genre}>
+            <Grid item key={genre.id || genre.name}>
               <Box sx={{
                 width: 100, height: 100,
                 borderRadius: '50%',
@@ -70,9 +71,11 @@ const HomePage = () => {
                 border: '1px solid #e0e0e0',
                 transition: '0.2s',
                 '&:hover': { borderColor: 'primary.main', boxShadow: 1 }
-              }}>
+              }}
+                onClick={() => navigate(`/books?genre=${encodeURIComponent(genre.name || '')}`)}
+              >
                 <Typography variant="body2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-                  {genre}
+                  {genre.name || 'Khác'}
                 </Typography>
               </Box>
             </Grid>

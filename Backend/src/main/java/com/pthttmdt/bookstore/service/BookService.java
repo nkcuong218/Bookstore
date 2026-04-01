@@ -2,7 +2,9 @@ package com.pthttmdt.bookstore.service;
 
 import com.pthttmdt.bookstore.dto.BookDto;
 import com.pthttmdt.bookstore.entity.Book;
+import com.pthttmdt.bookstore.entity.Genre;
 import com.pthttmdt.bookstore.repository.BookRepository;
+import com.pthttmdt.bookstore.repository.GenreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -13,12 +15,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.text.Normalizer;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final GenreRepository genreRepository;
 
     public Page<BookDto.Response> getBooks(String keyword, String genre, int page, int size, String sortBy) {
         Sort sort = switch (sortBy) {
@@ -48,21 +55,34 @@ public class BookService {
     }
 
     public List<String> getGenres() {
+        List<String> fromGenreTable = genreRepository.findByActiveTrueOrderByNameAsc()
+                .stream()
+                .map(Genre::getName)
+                .toList();
+
+        if (!fromGenreTable.isEmpty()) {
+            return fromGenreTable;
+        }
+
         return bookRepository.findDistinctGenres();
     }
 
     // Admin methods
     public BookDto.Response create(BookDto.Request req) {
+        Set<Genre> genres = resolveGenres(req);
+
         Book book = Book.builder()
                 .title(req.getTitle())
                 .author(req.getAuthor())
                 .price(req.getPrice())
-                .genre(req.getGenre())
+            .genre(primaryGenreName(genres, req.getGenre()))
+            .genres(genres)
                 .description(req.getDescription())
                 .coverUrl(saveBase64Image(req.getCoverUrl()))
                 .isbn(req.getIsbn())
                 .pages(req.getPages())
                 .publisher(req.getPublisher())
+                .yearPublished(req.getYearPublished())
                 .language(req.getLanguage())
                 .rating(req.getRating() != null ? req.getRating() : 0.0)
                 .reviews(req.getReviews() != null ? req.getReviews() : 0)
@@ -75,15 +95,24 @@ public class BookService {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sách!"));
 
+        boolean hasGenreInput = (req.getGenres() != null && !req.getGenres().isEmpty())
+            || (req.getGenre() != null && !req.getGenre().isBlank());
+
+        Set<Genre> genres = hasGenreInput ? resolveGenres(req) : book.getGenres();
+
         book.setTitle(req.getTitle());
         book.setAuthor(req.getAuthor());
         book.setPrice(req.getPrice());
-        book.setGenre(req.getGenre());
+        if (hasGenreInput) {
+            book.setGenres(genres);
+            book.setGenre(primaryGenreName(genres, req.getGenre()));
+        }
         book.setDescription(req.getDescription());
         book.setCoverUrl(saveBase64Image(req.getCoverUrl()));
         book.setIsbn(req.getIsbn());
         book.setPages(req.getPages());
         book.setPublisher(req.getPublisher());
+        book.setYearPublished(req.getYearPublished());
         book.setLanguage(req.getLanguage());
         if (req.getRating() != null) book.setRating(req.getRating());
         if (req.getStock() != null) book.setStock(req.getStock());
@@ -130,5 +159,70 @@ public class BookService {
             e.printStackTrace();
             return coverUrl;
         }
+    }
+
+    private Set<Genre> resolveGenres(BookDto.Request req) {
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+
+        if (req.getGenre() != null && !req.getGenre().isBlank()) {
+            names.add(req.getGenre().trim());
+        }
+
+        if (req.getGenres() != null) {
+            req.getGenres().stream()
+                    .filter(item -> item != null && !item.isBlank())
+                    .map(String::trim)
+                    .forEach(names::add);
+        }
+
+        LinkedHashSet<Genre> result = new LinkedHashSet<>();
+        for (String name : names) {
+            result.add(findOrCreateGenre(name));
+        }
+
+        return result;
+    }
+
+    private Genre findOrCreateGenre(String name) {
+        return genreRepository.findByNameIgnoreCase(name).orElseGet(() -> {
+            String slug = toSlug(name);
+            String uniqueSlug = slug;
+            int suffix = 2;
+
+            while (genreRepository.findBySlug(uniqueSlug).isPresent()) {
+                uniqueSlug = slug + "-" + suffix;
+                suffix++;
+            }
+
+            Genre genre = Genre.builder()
+                    .name(name)
+                    .slug(uniqueSlug)
+                    .active(true)
+                    .build();
+
+            return genreRepository.save(genre);
+        });
+    }
+
+    private String primaryGenreName(Set<Genre> genres, String fallback) {
+        if (genres != null && !genres.isEmpty()) {
+            return genres.iterator().next().getName();
+        }
+
+        if (fallback != null && !fallback.isBlank()) {
+            return fallback.trim();
+        }
+
+        return null;
+    }
+
+    private String toSlug(String input) {
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+
+        return normalized.isBlank() ? "genre" : normalized;
     }
 }

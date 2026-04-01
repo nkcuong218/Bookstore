@@ -330,6 +330,10 @@ const BookDetail = () => {
                     <Typography variant="body1" sx={{ mb: 1 }}>{book.publisher}</Typography>
                   </Grid>
                   <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">Year Published:</Typography>
+                    <Typography variant="body1" sx={{ mb: 1 }}>{book.yearPublished || 'N/A'}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
                     <Typography variant="body2" color="text.secondary">Language:</Typography>
                     <Typography variant="body1" sx={{ mb: 1 }}>{book.language}</Typography>
                   </Grid>

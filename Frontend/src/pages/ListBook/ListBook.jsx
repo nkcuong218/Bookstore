@@ -1,14 +1,27 @@
 import { Box, Container, Typography, Grid, Chip, FormControl, Select, MenuItem } from '@mui/material'
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import BookCard from '../../components/BookCard/BookCard'
 import bookService from '../../apis/bookService'
 
 const ListBook = () => {
+  const location = useLocation()
   const [selectedGenre, setSelectedGenre] = useState('All')
   const [sortBy, setSortBy] = useState('featured')
   const [books, setBooks] = useState([])
   const [genres, setGenres] = useState([])
   const [loading, setLoading] = useState(false)
+
+  const keyword = new URLSearchParams(location.search).get('keyword')?.trim() || ''
+  const genreFromQuery = new URLSearchParams(location.search).get('genre')?.trim() || ''
+
+  useEffect(() => {
+    if (genreFromQuery) {
+      setSelectedGenre(genreFromQuery)
+    } else {
+      setSelectedGenre('All')
+    }
+  }, [genreFromQuery])
 
   useEffect(() => {
     const fetchGenres = async () => {
@@ -35,6 +48,7 @@ const ListBook = () => {
         }
 
         const response = await bookService.getBooks({
+          keyword: keyword || undefined,
           genre: selectedGenre === 'All' ? undefined : selectedGenre,
           page: 0,
           size: 100,
@@ -55,7 +69,7 @@ const ListBook = () => {
     }
 
     fetchBooks()
-  }, [selectedGenre, sortBy])
+  }, [selectedGenre, sortBy, keyword])
 
   return (
     <Box sx={{ bgcolor: '#f9f9f9', minHeight: '100vh', py: 4 }}>
@@ -63,10 +77,12 @@ const ListBook = () => {
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
-            All Books
+            {keyword ? `Kết quả cho "${keyword}"` : 'All Books'}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Discover our collection of {books.length} amazing books
+            {keyword
+              ? `Tìm thấy ${books.length} sách phù hợp`
+              : `Discover our collection of ${books.length} amazing books`}
           </Typography>
         </Box>
 

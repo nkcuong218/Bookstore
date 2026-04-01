@@ -3,6 +3,8 @@ package com.pthttmdt.bookstore.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "books")
@@ -22,7 +24,16 @@ public class Book {
     @Column(nullable = false)
     private Long price;
 
+        // Legacy single genre field kept for backward compatibility.
     private String genre;
+
+        @ManyToMany(fetch = FetchType.LAZY)
+        @JoinTable(
+            name = "book_genres",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "genre_id")
+        )
+        private Set<Genre> genres = new LinkedHashSet<>();
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -35,6 +46,8 @@ public class Book {
     private Integer pages;
 
     private String publisher;
+
+    private Integer yearPublished;
 
     private String language;
 

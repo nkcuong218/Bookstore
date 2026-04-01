@@ -12,20 +12,18 @@ import java.util.List;
 @Repository
 public interface BookRepository extends JpaRepository<Book, Long> {
 
-    Page<Book> findByGenre(String genre, Pageable pageable);
-
     @Query("SELECT b FROM Book b WHERE " +
            "LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(b.author) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Book> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT b FROM Book b WHERE " +
+    @Query("SELECT DISTINCT b FROM Book b LEFT JOIN b.genres g WHERE " +
            "(:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(b.author) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND (:genre IS NULL OR b.genre = :genre)")
+           "AND (:genre IS NULL OR LOWER(g.name) = LOWER(:genre))")
     Page<Book> findWithFilters(@Param("keyword") String keyword, @Param("genre") String genre, Pageable pageable);
 
     List<Book> findTop8ByOrderByRatingDesc();
 
-    @Query("SELECT DISTINCT b.genre FROM Book b")
+       @Query("SELECT DISTINCT g.name FROM Book b JOIN b.genres g ORDER BY g.name")
     List<String> findDistinctGenres();
 }

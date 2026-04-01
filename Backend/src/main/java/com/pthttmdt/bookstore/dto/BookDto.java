@@ -4,6 +4,7 @@ import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class BookDto {
 
@@ -18,12 +19,16 @@ public class BookDto {
         @NotNull(message = "Giá không được trống")
         private Long price;
 
+        // Legacy single genre input
         private String genre;
+        // New multi-genre input
+        private List<String> genres;
         private String description;
         private String coverUrl;
         private String isbn;
         private Integer pages;
         private String publisher;
+        private Integer yearPublished;
         private String language = "Tiếng Việt";
         private Double rating = 0.0;
         private Integer reviews = 0;
@@ -36,12 +41,16 @@ public class BookDto {
         private String title;
         private String author;
         private Long price;
+        // Legacy single genre output
         private String genre;
+        // New multi-genre output
+        private List<String> genres;
         private String description;
         private String coverUrl;
         private String isbn;
         private Integer pages;
         private String publisher;
+        private Integer yearPublished;
         private String language;
         private Double rating;
         private Integer reviews;
@@ -55,12 +64,21 @@ public class BookDto {
             res.title = book.getTitle();
             res.author = book.getAuthor();
             res.price = book.getPrice();
-            res.genre = book.getGenre();
+                List<String> genreNames = (book.getGenres() == null ? java.util.Set.<com.pthttmdt.bookstore.entity.Genre>of() : book.getGenres())
+                    .stream()
+                    .map(com.pthttmdt.bookstore.entity.Genre::getName)
+                    .filter(name -> name != null && !name.isBlank())
+                    .sorted(String::compareToIgnoreCase)
+                    .toList();
+
+                res.genres = genreNames;
+                res.genre = !genreNames.isEmpty() ? genreNames.get(0) : book.getGenre();
             res.description = book.getDescription();
             res.coverUrl = book.getCoverUrl();
             res.isbn = book.getIsbn();
             res.pages = book.getPages();
             res.publisher = book.getPublisher();
+            res.yearPublished = book.getYearPublished();
             res.language = book.getLanguage();
             res.rating = book.getRating();
             res.reviews = book.getReviews();

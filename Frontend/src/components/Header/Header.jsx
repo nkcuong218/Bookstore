@@ -17,6 +17,7 @@ const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [cartCount, setCartCount] = useState(0)
+  const [searchKeyword, setSearchKeyword] = useState('')
   const navigate = useNavigate()
 
   const open = Boolean(anchorEl)
@@ -70,6 +71,11 @@ const Header = () => {
     navigate('/register')
   }
 
+  const handleSearch = () => {
+    const keyword = searchKeyword.trim()
+    navigate(`/books${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}`)
+  }
+
   return (
     <Box sx={{ width: '100%', bgcolor: 'background.paper', borderBottom: '1px solid #e0e0e0' }}>
 
@@ -100,8 +106,22 @@ const Header = () => {
           borderRadius: '4px',
           overflow: 'hidden'
         }}>
-          <InputBase sx={{ ml: 2, flex: 1 }} placeholder="Tìm kiếm sách..." />
-          <Box sx={{ bgcolor: 'primary.main', px: 2, display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+          <InputBase
+            sx={{ ml: 2, flex: 1 }}
+            placeholder="Tìm kiếm sách..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleSearch()
+              }
+            }}
+          />
+          <Box
+            sx={{ bgcolor: 'primary.main', px: 2, display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            onClick={handleSearch}
+          >
             <SearchIcon sx={{ color: 'white' }} />
           </Box>
         </Box>

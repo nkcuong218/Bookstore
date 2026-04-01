@@ -24,11 +24,13 @@ const AddBook = () => {
   const [formData, setFormData] = useState({
     title: '',
     author: '',
+    genresInput: '',
     price: '',
     stock: '',
     isbn: '',
     pages: '',
     publisher: '',
+    yearPublished: '',
     description: '',
     coverUrl: ''
   })
@@ -77,11 +79,16 @@ const AddBook = () => {
     const payload = {
       title: formData.title,
       author: formData.author,
+      genres: formData.genresInput
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
       price: parseInt(formData.price),
       stock: parseInt(formData.stock),
       isbn: formData.isbn,
       pages: parseInt(formData.pages) || 0,
       publisher: formData.publisher,
+      yearPublished: parseInt(formData.yearPublished) || null,
       description: formData.description,
       coverUrl: formData.coverUrl
     }
@@ -235,6 +242,17 @@ const AddBook = () => {
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
+                label="Thể loại (nhiều thể loại)"
+                value={formData.genresInput}
+                onChange={(e) => handleFormChange('genresInput', e.target.value)}
+                placeholder="Ví dụ: Technology, Business, Self-Help"
+                helperText="Nhập nhiều thể loại, ngăn cách bằng dấu phẩy"
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
                 label="ISBN"
                 value={formData.isbn}
                 onChange={(e) => handleFormChange('isbn', e.target.value)}
@@ -280,6 +298,18 @@ const AddBook = () => {
                 label="Nhà xuất bản"
                 value={formData.publisher}
                 onChange={(e) => handleFormChange('publisher', e.target.value)}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Năm xuất bản"
+                type="number"
+                value={formData.yearPublished}
+                onChange={(e) => handleFormChange('yearPublished', e.target.value)}
+                placeholder="Ví dụ: 2024"
+                inputProps={{ min: 1000, max: 2099 }}
               />
             </Grid>
 
