@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Box,
@@ -6,7 +6,8 @@ import {
   Typography,
   TextField,
   Button,
-  Paper
+  Paper,
+  Divider
 } from '@mui/material'
 import authService from '../../apis/authService'
 
@@ -15,10 +16,84 @@ const Login = ({ portal = 'customer' }) => {
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
   const location = useLocation()
+  const googleButtonRef = useRef(null)
 
   const authScope = portal === 'admin' || location.pathname.startsWith('/admin')
     ? 'admin'
     : 'customer'
+
+  const handleAuthSuccess = (response, scope = authScope) => {
+    const isAdminRole = authService.isAdminRole(response?.role)
+
+    if (scope === 'admin') {
+      if (!isAdminRole) {
+        authService.logout('admin')
+        alert('Tài khoản này không có quyền quản trị!')
+        return
+      }
+
+      alert('Đăng nhập thành công!')
+      navigate('/admin/dashboard')
+      return
+    }
+
+    if (isAdminRole) {
+      authService.logout('customer')
+      authService.setSession(response, 'admin')
+      alert('Đăng nhập thành công!')
+      navigate('/admin/dashboard')
+      return
+    }
+
+    alert('Đăng nhập thành công!')
+    navigate('/')
+  }
+
+  useEffect(() => {
+    if (authScope !== 'customer') return
+
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    if (!clientId) return
+
+    let cancelled = false
+
+    const renderGoogleButton = () => {
+      if (cancelled) return
+
+      const google = window.google
+      if (!google?.accounts?.id || !googleButtonRef.current) {
+        window.setTimeout(renderGoogleButton, 100)
+        return
+      }
+
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (googleResponse) => {
+          try {
+            const response = await authService.loginWithGoogle(googleResponse?.credential)
+            handleAuthSuccess(response, 'customer')
+          } catch (error) {
+            alert(error.message || 'Đăng nhập Google thất bại!')
+          }
+        }
+      })
+
+      googleButtonRef.current.innerHTML = ''
+      google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        text: 'continue_with',
+        width: 320
+      })
+    }
+
+    renderGoogleButton()
+
+    return () => {
+      cancelled = true
+    }
+  }, [authScope, navigate])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -30,30 +105,7 @@ const Login = ({ portal = 'customer' }) => {
 
     try {
       const response = await authService.login({ email, password }, authScope)
-      const isAdminRole = authService.isAdminRole(response?.role)
-
-      if (authScope === 'admin') {
-        if (!isAdminRole) {
-          authService.logout('admin')
-          alert('Tài khoản này không có quyền quản trị!')
-          return
-        }
-
-        alert('Đăng nhập thành công!')
-        navigate('/admin/dashboard')
-        return
-      }
-
-      if (isAdminRole) {
-        authService.logout('customer')
-        authService.setSession(response, 'admin')
-        alert('Đăng nhập thành công!')
-        navigate('/admin/dashboard')
-        return
-      }
-
-      alert('Đăng nhập thành công!')
-      navigate('/')
+      handleAuthSuccess(response)
     } catch (error) {
       alert(error.message || 'Đăng nhập thất bại!')
     }
@@ -118,6 +170,21 @@ const Login = ({ portal = 'customer' }) => {
             >
                             Đăng Nhập
             </Button>
+
+            {authScope === 'customer' && (
+              <>
+                <Divider>hoặc</Divider>
+                {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <Box ref={googleButtonRef} />
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                    Thiếu cấu hình Google Login (VITE_GOOGLE_CLIENT_ID).
+                  </Typography>
+                )}
+              </>
+            )}
           </Box>
 
           <Typography

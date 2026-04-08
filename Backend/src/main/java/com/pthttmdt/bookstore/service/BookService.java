@@ -3,6 +3,7 @@ package com.pthttmdt.bookstore.service;
 import com.pthttmdt.bookstore.dto.BookDto;
 import com.pthttmdt.bookstore.entity.Book;
 import com.pthttmdt.bookstore.entity.Genre;
+import com.pthttmdt.bookstore.entity.Order;
 import com.pthttmdt.bookstore.repository.BookRepository;
 import com.pthttmdt.bookstore.repository.GenreRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,16 @@ public class BookService {
     public List<BookDto.Response> getFeatured() {
         return bookRepository.findTop8ByOrderByRatingDesc()
                 .stream().map(BookDto.Response::fromEntity).toList();
+    }
+
+    public List<BookDto.Response> getBestSellers(int size) {
+        int safeSize = Math.max(1, Math.min(size, 20));
+        Pageable pageable = PageRequest.of(0, safeSize);
+
+        return bookRepository.findTopSellingBooks(Order.Status.CANCELLED, pageable)
+                .stream()
+                .map(BookDto.Response::fromEntity)
+                .toList();
     }
 
     public List<String> getGenres() {

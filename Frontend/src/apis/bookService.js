@@ -28,6 +28,16 @@ const bookService = {
   },
 
   /**
+   * Lấy sách bán chạy theo số lượng bán
+   * @param {Number} size - Số lượng sách cần lấy
+   * @returns {Promise<Array>} Array of best-seller books
+   */
+  getBestSellerBooks: async (size = 10) => {
+    const query = new URLSearchParams({ size: String(size) }).toString()
+    return apiClient.get(`/api/books/best-sellers?${query}`, { skipAuth: true })
+  },
+
+  /**
    * Lấy danh sách thể loại
    * @returns {Promise<Array>} Array of genre strings
    */

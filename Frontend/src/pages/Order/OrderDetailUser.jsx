@@ -22,6 +22,7 @@ const OrderDetailUser = () => {
   const navigate = useNavigate()
   const [orderData, setOrderData] = useState(null)
   const [isConfirmingReceived, setIsConfirmingReceived] = useState(false)
+  const [isCancellingOrder, setIsCancellingOrder] = useState(false)
 
   const loadOrder = useCallback(async () => {
     try {
@@ -81,6 +82,23 @@ const OrderDetailUser = () => {
     navigate(`/my-orders/${reviewOrderId}/review`, { state: { order: orderData } })
   }
 
+  const handleCancelOrder = async () => {
+    if (!orderData?.id || isCancellingOrder || orderData.status !== 'PENDING') return
+
+    const confirmed = window.confirm('Bạn có chắc muốn hủy đơn hàng này không?')
+    if (!confirmed) return
+
+    try {
+      setIsCancellingOrder(true)
+      const updatedOrder = await orderService.cancelMyOrder(orderData.id)
+      setOrderData(updatedOrder)
+    } catch (error) {
+      alert(error.message || 'Hủy đơn hàng thất bại!')
+    } finally {
+      setIsCancellingOrder(false)
+    }
+  }
+
   const calculateSubtotal = () => {
     return orderItems.reduce((sum, item) => {
       const price = Number(item?.price || 0)
@@ -96,6 +114,12 @@ const OrderDetailUser = () => {
 
   const paymentStatusRaw = String(orderData?.paymentLinkStatus || '').trim().toUpperCase()
   const isPaid = paymentStatusRaw === 'PAID'
+  const isCancelled = orderData?.status === 'CANCELLED'
+  const paymentStatusLabel = isPaid
+    ? 'Đã thanh toán'
+    : paymentStatusRaw === 'PENDING'
+      ? 'Chưa thanh toán'
+      : (orderData?.paymentLinkStatus || '')
 
   const hasPayOSPaymentInfo = Boolean(orderData?.paymentQrCode || orderData?.paymentCheckoutUrl)
   const payOSQrRawValue = orderData?.paymentQrCode || orderData?.paymentCheckoutUrl || ''
@@ -104,7 +128,7 @@ const OrderDetailUser = () => {
   const qrPayload = payOSQrValue.length > 1500 && orderData?.paymentCheckoutUrl
     ? String(orderData.paymentCheckoutUrl)
     : payOSQrValue
-  const canRenderQr = !isPaid && qrPayload.length > 0
+  const canRenderQr = !isPaid && !isCancelled && qrPayload.length > 0
   const qrImageSrc = canRenderQr
     ? (isImageQr
       ? qrPayload
@@ -221,7 +245,7 @@ const OrderDetailUser = () => {
                   <Alert severity={hasPayOSPaymentInfo || hasBankTransferInfo ? 'info' : 'warning'}>
                     <Box sx={{ display: 'grid', gap: 1.5 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                        Thông tin chuyển khoản
+                        Thông tin thanh toán
                       </Typography>
 
                       {isPaid && (
@@ -242,12 +266,10 @@ const OrderDetailUser = () => {
                           />
                         </Box>
                       ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          QR PayOS sẽ hiển thị sau khi hệ thống tạo link thanh toán.
-                        </Typography>
+                        <></>
                       )}
 
-                      {!isPaid && orderData.paymentCheckoutUrl && (
+                      {!isPaid && !isCancelled && orderData.paymentCheckoutUrl && (
                         <Button
                           variant="outlined"
                           startIcon={<OpenInNewIcon />}
@@ -260,7 +282,7 @@ const OrderDetailUser = () => {
 
                       {orderData.paymentLinkStatus && (
                         <Typography variant="body2" color={String(orderData.paymentLinkStatus).startsWith('FAILED') ? 'error.main' : 'text.secondary'}>
-                          Trạng thái thanh toán: {isPaid ? 'Đã thanh toán' : orderData.paymentLinkStatus}
+                          Trạng thái thanh toán: {paymentStatusLabel}
                         </Typography>
                       )}
 
@@ -272,11 +294,7 @@ const OrderDetailUser = () => {
                           <Typography variant="body2">Chủ tài khoản: {BANK_TRANSFER_INFO.accountName}</Typography>
                           <Typography variant="body2">Số tài khoản: {BANK_TRANSFER_INFO.accountNumber}</Typography>
                         </>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          Không có thông tin tài khoản tĩnh. Hãy ưu tiên quét QR hoặc mở link PayOS để thanh toán.
-                        </Typography>
-                      )}
+                      ) : null}
                     </Box>
                   </Alert>
                 )}
@@ -299,6 +317,18 @@ const OrderDetailUser = () => {
                       disabled={isConfirmingReceived}
                     >
                       {isConfirmingReceived ? 'Đang xử lý...' : 'Đã nhận được đơn hàng'}
+                    </Button>
+                  </Box>
+                )}
+                {orderData.status === 'PENDING' && (
+                  <Box sx={{ pt: 1 }}>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={handleCancelOrder}
+                      disabled={isCancellingOrder}
+                    >
+                      {isCancellingOrder ? 'Đang hủy...' : 'Hủy đơn hàng'}
                     </Button>
                   </Box>
                 )}

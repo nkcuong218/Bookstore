@@ -1,5 +1,5 @@
 import {
-  Box, Container, Typography, Grid, Button, Paper, IconButton, Divider, Breadcrumbs, Link
+  Box, Container, Typography, Grid, Button, Paper, IconButton, Divider, Breadcrumbs, Link, Checkbox
 } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -13,6 +13,7 @@ import { formatPrice } from '../../utils/formatPrice'
 const Cart = () => {
   const navigate = useNavigate()
   const [cartItems, setCartItems] = useState([])
+  const [selectedItems, setSelectedItems] = useState({})  // Track selected items
 
   useEffect(() => {
     const loadCart = () => {
@@ -49,10 +50,42 @@ const Cart = () => {
   const handleRemoveItem = (id) => {
     const nextCart = cartItems.filter(item => item.id !== id)
     syncCart(nextCart)
+    // Bỏ chọn sản phẩm này
+    setSelectedItems(prev => {
+      const newSelected = { ...prev }
+      delete newSelected[id]
+      return newSelected
+    })
+  }
+
+  const handleSelectItem = (id) => {
+    setSelectedItems(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }))
+  }
+
+  const handleSelectAll = () => {
+    if (Object.keys(selectedItems).length === cartItems.length) {
+      // Bỏ chọn tất cả
+      setSelectedItems({})
+    } else {
+      // Chọn tất cả
+      const allSelected = {}
+      cartItems.forEach(item => {
+        allSelected[item.id] = true
+      })
+      setSelectedItems(allSelected)
+    }
   }
 
   const calculateSubtotal = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
+    return cartItems.reduce((total, item) => {
+      if (selectedItems[item.id]) {
+        return total + (item.price * item.quantity)
+      }
+      return total
+    }, 0)
   }
 
   const subtotal = calculateSubtotal()
@@ -111,11 +144,31 @@ const Cart = () => {
           {/* Left: Cart Items */}
           <Grid item xs={12} md={8}>
             <Paper sx={{ p: 3 }}>
+              {/* Select All Checkbox */}
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, pb: 2, borderBottom: '1px solid #e0e0e0' }}>
+                <Checkbox
+                  checked={Object.keys(selectedItems).length === cartItems.length && cartItems.length > 0}
+                  indeterminate={Object.keys(selectedItems).length > 0 && Object.keys(selectedItems).length < cartItems.length}
+                  onChange={handleSelectAll}
+                />
+                <Typography variant="body1">
+                  {Object.keys(selectedItems).length === cartItems.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                </Typography>
+              </Box>
+
               {cartItems.map((item, index) => (
                 <Box key={item.id}>
                   <Grid container spacing={3} alignItems="center">
+                    {/* Checkbox */}
+                    <Grid item xs={1} sx={{ display: 'flex', justifyContent: 'center' }}>
+                      <Checkbox
+                        checked={!!selectedItems[item.id]}
+                        onChange={() => handleSelectItem(item.id)}
+                      />
+                    </Grid>
+
                     {/* Product Image */}
-                    <Grid item xs={3} sm={2}>
+                    <Grid item xs={2}>
                       <Box
                         onClick={() => navigate(`/books/${item.id}`)}
                         sx={{
@@ -136,7 +189,7 @@ const Cart = () => {
                     </Grid>
 
                     {/* Product Info */}
-                    <Grid item xs={9} sm={5}>
+                    <Grid item xs={8} sm={4}>
                       <Typography
                         variant="h6"
                         sx={{
@@ -212,6 +265,18 @@ const Cart = () => {
                 Tóm tắt đơn hàng
               </Typography>
 
+              {Object.keys(selectedItems).length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, p: 1, bgcolor: '#fff3cd', borderRadius: 1 }}>
+                  Chọn sản phẩm để xem tóm tắt
+                </Typography>
+              ) : (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Sản phẩm được chọn: {Object.keys(selectedItems).length}
+                  </Typography>
+                </>
+              )}
+
               <Box sx={{ mb: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
                   <Typography variant="body1">Tạm tính:</Typography>
@@ -240,10 +305,18 @@ const Cart = () => {
                 variant="contained"
                 fullWidth
                 size="large"
-                onClick={() => navigate('/checkout', { state: { cartItems } })}
+                disabled={Object.keys(selectedItems).length === 0}
+                onClick={() => {
+                  if (Object.keys(selectedItems).length === 0) {
+                    alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán!')
+                    return
+                  }
+                  const selectedCartItems = cartItems.filter(item => selectedItems[item.id])
+                  navigate('/checkout', { state: { cartItems: selectedCartItems } })
+                }}
                 sx={{ py: 1.5, fontSize: '1.1rem', mb: 2 }}
               >
-                Thanh toán
+                {Object.keys(selectedItems).length === 0 ? 'Chọn sản phẩm để thanh toán' : 'Thanh toán'}
               </Button>
 
               {/* Shipping Info */}

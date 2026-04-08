@@ -1,6 +1,7 @@
 package com.pthttmdt.bookstore.repository;
 
 import com.pthttmdt.bookstore.entity.Book;
+import com.pthttmdt.bookstore.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,6 +24,11 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     Page<Book> findWithFilters(@Param("keyword") String keyword, @Param("genre") String genre, Pageable pageable);
 
     List<Book> findTop8ByOrderByRatingDesc();
+
+       @Query("SELECT oi.book FROM OrderItem oi JOIN oi.order o " +
+                 "WHERE oi.book IS NOT NULL AND o.status <> :excludedStatus " +
+                 "GROUP BY oi.book ORDER BY SUM(oi.quantity) DESC")
+       List<Book> findTopSellingBooks(@Param("excludedStatus") Order.Status excludedStatus, Pageable pageable);
 
        @Query("SELECT DISTINCT g.name FROM Book b JOIN b.genres g ORDER BY g.name")
     List<String> findDistinctGenres();

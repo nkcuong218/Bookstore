@@ -59,6 +59,15 @@ const orderService = {
    */
   confirmReceived: async (id) => {
     return apiClient.patch(`/api/orders/${id}/confirm-received`)
+  },
+
+  /**
+   * User hủy đơn hàng của mình (chỉ khi đang xử lý)
+   * @param {Number} id - Order ID
+   * @returns {Promise<Object>} Updated order
+   */
+  cancelMyOrder: async (id) => {
+    return apiClient.patch(`/api/orders/${id}/cancel`)
   }
 }
 

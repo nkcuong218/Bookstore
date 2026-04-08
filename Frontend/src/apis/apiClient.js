@@ -11,40 +11,6 @@ const getTokenKeyByScope = (scope) => {
   return scope === 'admin' ? 'adminToken' : 'token'
 }
 
-const getAdminFallbackToken = () => {
-  const adminUserRaw = localStorage.getItem('adminCurrentUser') || localStorage.getItem('currentUser')
-
-  if (!adminUserRaw) return null
-
-  try {
-    const adminUser = JSON.parse(adminUserRaw)
-    const role = typeof adminUser?.role === 'string' ? adminUser.role.replace(/^ROLE_/i, '').toLowerCase() : ''
-
-    if (role === 'admin') {
-      return localStorage.getItem('token')
-    }
-  } catch {
-    return null
-  }
-
-  return null
-}
-
-const tokenLooksLikeAdmin = (token) => {
-  if (!token || typeof token !== 'string') return false
-
-  const parts = token.split('.')
-  if (parts.length < 2) return false
-
-  try {
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
-    const role = typeof payload?.role === 'string' ? payload.role.replace(/^ROLE_/i, '').toLowerCase() : ''
-    return role === 'admin'
-  } catch {
-    return false
-  }
-}
-
 class ApiClient {
   constructor(baseURL) {
     this.baseURL = baseURL
@@ -59,14 +25,7 @@ class ApiClient {
     } = options
 
     const scope = authScope || getScopeFromPath()
-    let token = localStorage.getItem(getTokenKeyByScope(scope))
-
-    if (!token && scope === 'admin') {
-      const fallbackToken = getAdminFallbackToken()
-      if (tokenLooksLikeAdmin(fallbackToken)) {
-        token = fallbackToken
-      }
-    }
+    const token = localStorage.getItem(getTokenKeyByScope(scope))
 
     const config = {
       ...requestOptions,

@@ -7,6 +7,7 @@ import HomePage from './pages/Home/HomePage'
 import Footer from './components/Footer/Footer'
 import Login from './pages/Login/Login'
 import Register from './pages/Register/Register'
+import VerifyEmail from './pages/VerifyEmail/VerifyEmail'
 import ListBook from './pages/ListBook/ListBook'
 import BookDetail from './pages/ListBook/BookDetail/BookDetail'
 import Cart from './pages/Cart/Cart'
@@ -30,6 +31,7 @@ import UsersManagement from './pages/Admin/UsersManagement'
 import AddUser from './pages/Admin/AddUser'
 import EditUser from './pages/Admin/EditUser'
 import DiscountCodesManagement from './pages/Admin/DiscountCodesManagement'
+import BannersManagement from './pages/Admin/BannersManagement'
 import authService from './apis/authService'
 
 // Protected Route Component
@@ -190,6 +192,8 @@ function App() {
           </Box>
         } />
 
+        <Route path="/verify-email" element={<VerifyEmail />} />
+
         {/* Admin Routes - Protected */}
         <Route path="/admin" element={
           <ProtectedAdminRoute>
@@ -207,6 +211,7 @@ function App() {
           <Route path="users/add" element={<AddUser />} />
           <Route path="users/edit/:id" element={<EditUser />} />
           <Route path="discount-codes" element={<DiscountCodesManagement />} />
+          <Route path="banners" element={<BannersManagement />} />
           <Route path="categories" element={
             <Box sx={{ textAlign: 'center', py: 8 }}>
               <h2>Quản lý thể loại</h2>

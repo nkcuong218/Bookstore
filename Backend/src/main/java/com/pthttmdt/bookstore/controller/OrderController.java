@@ -64,6 +64,19 @@ public class OrderController {
         }
     }
 
+    // User: hủy đơn hàng (chỉ khi đang xử lý)
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelMyOrder(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        try {
+            return ResponseEntity.ok(orderService.cancelMyOrder(id, user.getId()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // Admin: xem tất cả đơn hàng
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")

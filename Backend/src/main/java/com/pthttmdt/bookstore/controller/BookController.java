@@ -34,6 +34,13 @@ public class BookController {
         return ResponseEntity.ok(bookService.getFeatured());
     }
 
+    @GetMapping("/best-sellers")
+    public ResponseEntity<List<BookDto.Response>> getBestSellers(
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(bookService.getBestSellers(size));
+    }
+
     @GetMapping("/genres")
     public ResponseEntity<List<String>> getGenres() {
         return ResponseEntity.ok(bookService.getGenres());

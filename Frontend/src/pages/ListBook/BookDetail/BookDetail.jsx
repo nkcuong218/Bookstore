@@ -100,8 +100,22 @@ const BookDetail = () => {
 
   const handleAddToCart = () => {
     if (!book) return
+    
+    // Kiểm tra số lượng không vượt quá stock
+    if (quantity > book.stock) {
+      alert(`Số lượng không được vượt quá ${book.stock} quyển trong kho!`)
+      return
+    }
+
     const existingCart = JSON.parse(localStorage.getItem('cart') || '[]')
     const foundItem = existingCart.find((item) => item.id === book.id)
+
+    // Kiểm tra tổng số lượng (hiện tại + muốn thêm) không vượt quá stock
+    const totalQuantity = (foundItem?.quantity || 0) + quantity
+    if (totalQuantity > book.stock) {
+      alert(`Tổng số lượng sách này trong giỏ không được vượt quá ${book.stock} quyển!`)
+      return
+    }
 
     let nextCart
     if (foundItem) {
@@ -149,7 +163,7 @@ const BookDetail = () => {
   }
 
   const handleQuantityChange = (action) => {
-    if (action === 'increase') {
+    if (action === 'increase' && quantity < book.stock) {
       setQuantity(prev => prev + 1)
     } else if (action === 'decrease' && quantity > 1) {
       setQuantity(prev => prev - 1)
@@ -262,7 +276,14 @@ const BookDetail = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, color: 'success.main' }}>
                   <CheckCircleOutlineIcon />
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                    Còn hàng
+                    Còn hàng - Số lượng: {book.stock} quyển
+                  </Typography>
+                </Box>
+              )}
+              {!book.inStock && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, color: 'error.main' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    Hết hàng
                   </Typography>
                 </Box>
               )}
@@ -298,9 +319,10 @@ const BookDetail = () => {
                   size="medium"
                   startIcon={<ShoppingCartIcon />}
                   onClick={handleAddToCart}
+                  disabled={!book.inStock}
                   sx={{ flex: 1, fontSize: '0.95rem' }}
                 >
-                  THÊM VÀO GIỎ HÀNG
+                  {book.inStock ? 'THÊM VÀO GIỎ HÀNG' : 'HẾT HÀNG'}
                 </Button>
                 <Button
                   variant="outlined"

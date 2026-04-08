@@ -34,6 +34,12 @@ public class User {
     @Column(nullable = false)
     private Status status = Status.ACTIVE;
 
+    private Boolean emailVerified = false;
+
+    private String emailVerificationToken;
+
+    private LocalDateTime emailVerificationExpiresAt;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 

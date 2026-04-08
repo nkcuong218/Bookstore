@@ -321,6 +321,35 @@ public class OrderService {
         return OrderDto.Response.fromEntity(orderRepository.save(order));
     }
 
+    @Transactional
+    public OrderDto.Response cancelMyOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng!"));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Bạn không có quyền cập nhật đơn hàng này!");
+        }
+
+        if (order.getStatus() != Order.Status.PENDING) {
+            throw new RuntimeException("Chỉ có thể hủy khi đơn hàng đang xử lý!");
+        }
+
+        List<OrderItem> items = order.getItems() == null ? List.of() : order.getItems();
+        for (OrderItem item : items) {
+            if (item == null || item.getBook() == null || item.getQuantity() == null) {
+                continue;
+            }
+
+            Book book = item.getBook();
+            int currentStock = book.getStock() == null ? 0 : book.getStock();
+            book.setStock(currentStock + item.getQuantity());
+            bookRepository.save(book);
+        }
+
+        order.setStatus(Order.Status.CANCELLED);
+        return OrderDto.Response.fromEntity(orderRepository.save(order));
+    }
+
     // Admin
     public Page<OrderDto.Response> getAllOrders(int page, int size) {
         return orderRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, size))

@@ -38,8 +38,8 @@ const AdminLayout = () => {
     { text: 'Quản lý sách', icon: <MenuBookIcon />, path: '/admin/books' },
     { text: 'Quản lý đơn hàng', icon: <ShoppingCartIcon />, path: '/admin/orders' },
     { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users' },
-    { text: 'Mã giảm giá', icon: <LocalOfferIcon />, path: '/admin/discount-codes' }
-
+    { text: 'Mã giảm giá', icon: <LocalOfferIcon />, path: '/admin/discount-codes' },
+    { text: 'Quản lý Banner', icon: <MenuBookIcon />, path: '/admin/banners' }
   ]
 
   const handleDrawerToggle = () => {

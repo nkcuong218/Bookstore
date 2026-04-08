@@ -45,10 +45,7 @@ const authService = {
 
     const resolvedScope = resolveScope(scope)
     const keys = getStorageKeys(resolvedScope)
-    const oppositeKeys = getStorageKeys(resolvedScope === 'admin' ? 'customer' : 'admin')
 
-    localStorage.removeItem(oppositeKeys.token)
-    localStorage.removeItem(oppositeKeys.user)
     localStorage.setItem(keys.token, authResponse.token)
     localStorage.setItem(keys.user, JSON.stringify(toStoredUser(authResponse)))
     emitAuthChange(resolvedScope)
@@ -60,9 +57,7 @@ const authService = {
    * @returns {Promise<Object>} { token, id, fullName, email, role, phone, address }
    */
   register: async (data, scope = 'customer') => {
-    const resolvedScope = resolveScope(scope)
     const response = await apiClient.post('/api/auth/register', data, { skipAuth: true })
-    authService.setSession(response, resolvedScope)
     return response
   },
 
@@ -79,16 +74,29 @@ const authService = {
   },
 
   /**
+   * Đăng nhập bằng Google ID token
+   * @param {String} idToken - Google credential token
+   * @returns {Promise<Object>} { token, id, fullName, email, role, phone, address }
+   */
+  loginWithGoogle: async (idToken) => {
+    const response = await apiClient.post('/api/auth/google', { idToken }, { skipAuth: true })
+    authService.setSession(response, 'customer')
+    return response
+  },
+
+  verifyEmail: async (token) => {
+    return apiClient.get(`/api/auth/verify-email?token=${encodeURIComponent(token)}`, { skipAuth: true })
+  },
+
+  /**
    * Đăng xuất
    */
   logout: (scope) => {
     const resolvedScope = resolveScope(scope)
     const keys = getStorageKeys(resolvedScope)
-    const oppositeKeys = getStorageKeys(resolvedScope === 'admin' ? 'customer' : 'admin')
+
     localStorage.removeItem(keys.token)
     localStorage.removeItem(keys.user)
-    localStorage.removeItem(oppositeKeys.token)
-    localStorage.removeItem(oppositeKeys.user)
     emitAuthChange(resolvedScope)
   },
 

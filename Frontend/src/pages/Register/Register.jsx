@@ -33,15 +33,14 @@ const Register = () => {
     }
 
     try {
-      await authService.register({
+      const response = await authService.register({
         fullName,
         email,
         password,
         phone
       })
 
-      alert('Đăng ký thành công! Vui lòng đăng nhập.')
-      authService.logout('customer')
+      alert(response?.message || 'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.')
       navigate('/login')
     } catch (error) {
       alert(error.message || 'Đăng ký thất bại!')

@@ -34,6 +34,30 @@ public class AuthDto {
     }
 
     @Data
+    public static class GoogleLoginRequest {
+        @NotBlank(message = "Google token không được trống")
+        private String idToken;
+    }
+
+    @Data
+    public static class RegisterResponse {
+        private String message;
+
+        public RegisterResponse(String message) {
+            this.message = message;
+        }
+    }
+
+    @Data
+    public static class SimpleResponse {
+        private String message;
+
+        public SimpleResponse(String message) {
+            this.message = message;
+        }
+    }
+
+    @Data
     public static class AuthResponse {
         private String token;
         private Long id;
