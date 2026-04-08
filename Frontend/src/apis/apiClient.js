@@ -16,6 +16,12 @@ class ApiClient {
     this.baseURL = baseURL
   }
 
+  prepareBody(data) {
+    if (data === undefined || data === null) return undefined
+    if (typeof FormData !== 'undefined' && data instanceof FormData) return data
+    return JSON.stringify(data)
+  }
+
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`
     const {
@@ -30,9 +36,13 @@ class ApiClient {
     const config = {
       ...requestOptions,
       headers: {
-        'Content-Type': 'application/json',
         ...requestOptions.headers
       }
+    }
+
+    const isFormData = typeof FormData !== 'undefined' && requestOptions.body instanceof FormData
+    if (!isFormData) {
+      config.headers['Content-Type'] = 'application/json'
     }
 
     if (token && !skipAuth) {
@@ -76,7 +86,7 @@ class ApiClient {
     return this.request(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(data)
+      body: this.prepareBody(data)
     })
   }
 
@@ -84,7 +94,7 @@ class ApiClient {
     return this.request(endpoint, {
       ...options,
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: this.prepareBody(data)
     })
   }
 
@@ -92,7 +102,7 @@ class ApiClient {
     return this.request(endpoint, {
       ...options,
       method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined
+      body: this.prepareBody(data)
     })
   }
 

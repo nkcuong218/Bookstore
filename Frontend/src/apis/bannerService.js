@@ -8,18 +8,32 @@ const bannerService = {
   },
 
   // Create new banner (ADMIN)
-  createBanner: async (imageUrl, displayOrder) => {
+  createBanner: async (imageSource, displayOrder) => {
+    if (typeof File !== 'undefined' && imageSource instanceof File) {
+      const formData = new FormData()
+      formData.append('imageFile', imageSource)
+      formData.append('displayOrder', String(displayOrder))
+      return apiClient.post('/api/banners', formData)
+    }
+
     const response = await apiClient.post('/api/banners', {
-      imageUrl,
+      imageUrl: imageSource,
       displayOrder
     })
     return response
   },
 
   // Update banner (ADMIN)
-  updateBanner: async (id, imageUrl, displayOrder) => {
+  updateBanner: async (id, imageSource, displayOrder) => {
+    if (typeof File !== 'undefined' && imageSource instanceof File) {
+      const formData = new FormData()
+      formData.append('imageFile', imageSource)
+      formData.append('displayOrder', String(displayOrder))
+      return apiClient.put(`/api/banners/${id}`, formData)
+    }
+
     const response = await apiClient.put(`/api/banners/${id}`, {
-      imageUrl,
+      imageUrl: imageSource,
       displayOrder
     })
     return response

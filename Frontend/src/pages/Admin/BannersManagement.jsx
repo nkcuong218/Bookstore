@@ -16,8 +16,21 @@ const BannersManagement = () => {
   const [openDialog, setOpenDialog] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [currentBanner, setCurrentBanner] = useState(null)
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageFile, setImageFile] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState('')
   const [displayOrder, setDisplayOrder] = useState('')
+
+  useEffect(() => {
+    if (!imageFile) {
+      setPreviewUrl('')
+      return undefined
+    }
+
+    const objectUrl = URL.createObjectURL(imageFile)
+    setPreviewUrl(objectUrl)
+
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [imageFile])
 
   useEffect(() => {
     fetchBanners()
@@ -39,7 +52,7 @@ const BannersManagement = () => {
   const handleOpenAddDialog = () => {
     setIsEditing(false)
     setCurrentBanner(null)
-    setImageUrl('')
+    setImageFile(null)
     setDisplayOrder(banners.length > 0 ? Math.max(...banners.map(b => b.displayOrder)) + 1 : 1)
     setOpenDialog(true)
   }
@@ -47,7 +60,7 @@ const BannersManagement = () => {
   const handleOpenEditDialog = (banner) => {
     setIsEditing(true)
     setCurrentBanner(banner)
-    setImageUrl(banner.imageUrl)
+    setImageFile(null)
     setDisplayOrder(banner.displayOrder)
     setOpenDialog(true)
   }
@@ -55,13 +68,13 @@ const BannersManagement = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false)
     setCurrentBanner(null)
-    setImageUrl('')
+    setImageFile(null)
     setDisplayOrder('')
   }
 
   const handleSave = async () => {
-    if (!imageUrl.trim()) {
-      alert('Vui lòng nhập Image URL')
+    if (!imageFile) {
+      alert('Vui lòng chọn ảnh banner')
       return
     }
     if (!displayOrder) {
@@ -71,10 +84,10 @@ const BannersManagement = () => {
 
     try {
       if (isEditing) {
-        await bannerService.updateBanner(currentBanner.id, imageUrl, parseInt(displayOrder))
+        await bannerService.updateBanner(currentBanner.id, imageFile, parseInt(displayOrder))
         alert('Cập nhật banner thành công!')
       } else {
-        await bannerService.createBanner(imageUrl, parseInt(displayOrder))
+        await bannerService.createBanner(imageFile, parseInt(displayOrder))
         alert('Tạo banner mới thành công!')
       }
       fetchBanners()
@@ -224,17 +237,21 @@ const BannersManagement = () => {
           {isEditing ? 'Sửa Banner' : 'Thêm Banner'}
         </DialogTitle>
         <DialogContent sx={{ py: 3 }}>
-          <TextField
-            fullWidth
-            label="Image URL"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="Nhập URL của ảnh banner"
-            margin="normal"
-            multiline
-            rows={3}
-            helperText="URL phải trỏ đến một file ảnh hợp lệ"
-          />
+          <Button variant="outlined" component="label" sx={{ mb: 2 }}>
+            Chọn ảnh banner
+            <input
+              hidden
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+            />
+          </Button>
+
+          {imageFile && (
+            <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+              Đã chọn file: {imageFile.name}
+            </Typography>
+          )}
           <TextField
             fullWidth
             type="number"
@@ -246,14 +263,14 @@ const BannersManagement = () => {
             helperText="Thứ tự thấp hơn sẽ được hiển thị trước"
           />
 
-          {imageUrl && (
+          {previewUrl && (
             <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
                 Xem trước:
               </Typography>
               <Box
                 component="img"
-                src={imageUrl}
+                src={previewUrl}
                 alt="Banner preview"
                 sx={{
                   maxWidth: '100%',
@@ -274,7 +291,7 @@ const BannersManagement = () => {
           <Button
             variant="contained"
             onClick={handleSave}
-            disabled={!imageUrl.trim() || !displayOrder}
+            disabled={!imageFile || !displayOrder}
           >
             {isEditing ? 'Cập nhật' : 'Tạo'}
           </Button>
