@@ -217,9 +217,15 @@ public class OrderService {
         return trimmed.isEmpty() ? null : trimmed.toUpperCase();
     }
 
+    @Transactional
     public List<OrderDto.Response> getMyOrders(Long userId) {
-        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream().map(OrderDto.Response::fromEntity).toList();
+        List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+
+        orders.stream()
+                .filter(order -> order.getPaymentMethod() == Order.PaymentMethod.BANK_TRANSFER)
+                .forEach(this::syncPayOSPaymentStatus);
+
+        return orders.stream().map(OrderDto.Response::fromEntity).toList();
     }
 
     @Transactional
@@ -234,9 +240,33 @@ public class OrderService {
 
         if (order.getPaymentMethod() == Order.PaymentMethod.BANK_TRANSFER) {
             ensurePaymentLink(order);
+            syncPayOSPaymentStatus(order);
         }
 
         return OrderDto.Response.fromEntity(order);
+    }
+
+    private void syncPayOSPaymentStatus(Order order) {
+        if (order == null || order.getPaymentMethod() != Order.PaymentMethod.BANK_TRANSFER) {
+            return;
+        }
+
+        String currentStatus = isBlank(order.getPaymentLinkStatus())
+                ? ""
+                : order.getPaymentLinkStatus().trim().toUpperCase();
+
+        if ("PAID".equals(currentStatus)) {
+            return;
+        }
+
+        PayOSPaymentService.PaymentStatusResult statusResult = payOSPaymentService.getPaymentStatus(order);
+        String latestStatus = statusResult == null ? null : statusResult.status();
+        if (isBlank(latestStatus)) {
+            return;
+        }
+
+        order.setPaymentLinkStatus(latestStatus);
+        orderRepository.save(order);
     }
 
     private void ensurePaymentLink(Order order) {

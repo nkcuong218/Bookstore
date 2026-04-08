@@ -36,8 +36,8 @@ const MyOrders = () => {
         setNewOrderId(null)
       }, 5000)
 
-      // Clear navigation state
-      window.history.replaceState({}, document.title)
+      // Clear navigation state with React Router to avoid corrupting router history state
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
 
       return () => clearTimeout(timer)
     }
@@ -79,6 +79,23 @@ const MyOrders = () => {
     case 'Đã hủy': return 'error'
     default: return 'default'
     }
+  }
+
+  const getPaymentStatusMeta = (order) => {
+    if (!isBankTransferPayment(order?.paymentMethod)) {
+      return null
+    }
+
+    const rawStatus = String(order?.paymentLinkStatus || '').trim().toUpperCase()
+    if (rawStatus === 'PAID') {
+      return { label: 'Đã thanh toán', color: 'success' }
+    }
+
+    if (rawStatus.startsWith('FAILED')) {
+      return { label: 'Thanh toán lỗi', color: 'error' }
+    }
+
+    return { label: 'Chưa thanh toán', color: 'warning' }
   }
 
   const calculateTotal = (order) => order.totalAmount || 0
@@ -239,8 +256,11 @@ const MyOrders = () => {
           </Paper>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {normalizedOrders.map((order) => (
-              <Paper
+            {normalizedOrders.map((order) => {
+              const paymentMeta = getPaymentStatusMeta(order)
+
+              return (
+                <Paper
                 key={order.id}
                 sx={{
                   p: 3,
@@ -284,9 +304,18 @@ const MyOrders = () => {
                       <Typography variant="body2" color="text.secondary">
                         Thanh toán
                       </Typography>
-                      <Typography variant="body1">
-                        {formatPaymentMethodLabel(order.paymentMethod)}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography variant="body1">
+                          {formatPaymentMethodLabel(order.paymentMethod)}
+                        </Typography>
+                        {paymentMeta && (
+                          <Chip
+                            size="small"
+                            color={paymentMeta.color}
+                            label={paymentMeta.label}
+                          />
+                        )}
+                      </Box>
                     </Box>
                   </Box>
                   <Chip
@@ -357,8 +386,9 @@ const MyOrders = () => {
                     Xem chi tiết
                   </Button>
                 </Box>
-              </Paper>
-            ))}
+                </Paper>
+              )
+            })}
           </Box>
         )}
       </Container>

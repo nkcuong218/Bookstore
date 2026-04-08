@@ -7,7 +7,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import QRCode from 'react-qr-code'
 import { formatPrice } from '../../utils/formatPrice'
 import orderService from '../../apis/orderService'
 import {
@@ -95,9 +94,22 @@ const OrderDetailUser = () => {
     return orderData?.totalAmount || 0
   }
 
+  const paymentStatusRaw = String(orderData?.paymentLinkStatus || '').trim().toUpperCase()
+  const isPaid = paymentStatusRaw === 'PAID'
+
   const hasPayOSPaymentInfo = Boolean(orderData?.paymentQrCode || orderData?.paymentCheckoutUrl)
-  const payOSQrValue = orderData?.paymentQrCode || orderData?.paymentCheckoutUrl || ''
-  const canRenderQr = typeof payOSQrValue === 'string' && payOSQrValue.trim().length > 0 && payOSQrValue.length <= 2000
+  const payOSQrRawValue = orderData?.paymentQrCode || orderData?.paymentCheckoutUrl || ''
+  const payOSQrValue = typeof payOSQrRawValue === 'string' ? payOSQrRawValue.trim() : ''
+  const isImageQr = payOSQrValue.startsWith('data:image') || payOSQrValue.includes('qr.payos.vn')
+  const qrPayload = payOSQrValue.length > 1500 && orderData?.paymentCheckoutUrl
+    ? String(orderData.paymentCheckoutUrl)
+    : payOSQrValue
+  const canRenderQr = !isPaid && qrPayload.length > 0
+  const qrImageSrc = canRenderQr
+    ? (isImageQr
+      ? qrPayload
+      : `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrPayload)}`)
+    : ''
   const orderItems = (Array.isArray(orderData?.items) ? orderData.items : []).filter(Boolean)
 
   const formatOrderDate = (value) => {
@@ -212,9 +224,22 @@ const OrderDetailUser = () => {
                         Thông tin chuyển khoản
                       </Typography>
 
+                      {isPaid && (
+                        <Chip
+                          label="Đã thanh toán"
+                          color="success"
+                          size="small"
+                          sx={{ width: 'fit-content' }}
+                        />
+                      )}
+
                       {canRenderQr ? (
                         <Box sx={{ p: 2, bgcolor: '#fff', width: 'fit-content', borderRadius: 2 }}>
-                          <QRCode value={payOSQrValue} size={180} />
+                          <img
+                            src={qrImageSrc}
+                            alt="QR thanh toan"
+                            style={{ width: 180, height: 180, objectFit: 'contain' }}
+                          />
                         </Box>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
@@ -222,7 +247,7 @@ const OrderDetailUser = () => {
                         </Typography>
                       )}
 
-                      {orderData.paymentCheckoutUrl && (
+                      {!isPaid && orderData.paymentCheckoutUrl && (
                         <Button
                           variant="outlined"
                           startIcon={<OpenInNewIcon />}
@@ -235,7 +260,7 @@ const OrderDetailUser = () => {
 
                       {orderData.paymentLinkStatus && (
                         <Typography variant="body2" color={String(orderData.paymentLinkStatus).startsWith('FAILED') ? 'error.main' : 'text.secondary'}>
-                          Trạng thái PayOS: {orderData.paymentLinkStatus}
+                          Trạng thái thanh toán: {isPaid ? 'Đã thanh toán' : orderData.paymentLinkStatus}
                         </Typography>
                       )}
 

@@ -141,6 +141,53 @@ public class PayOSPaymentService {
         }
     }
 
+    public PaymentStatusResult getPaymentStatus(Order order) {
+        if (order == null || order.getId() == null) {
+            return new PaymentStatusResult(null, "Order data is invalid");
+        }
+
+        String normalizedClientId = normalize(clientId);
+        String normalizedApiKey = normalize(apiKey);
+
+        if (isBlank(normalizedClientId) || isBlank(normalizedApiKey)) {
+            return new PaymentStatusResult(null, "Missing PayOS credentials");
+        }
+
+        List<String> candidateUrls = new java.util.ArrayList<>();
+        if (!isBlank(order.getPaymentLinkId())) {
+            candidateUrls.add(PAYOS_API_URL + "/" + order.getPaymentLinkId().trim());
+        }
+        candidateUrls.add(PAYOS_API_URL + "/" + order.getId());
+
+        for (String url : candidateUrls) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .header("x-client-id", normalizedClientId)
+                        .header("x-api-key", normalizedApiKey)
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                    continue;
+                }
+
+                JsonNode root = objectMapper.readTree(response.body());
+                JsonNode data = root.path("data");
+                String payosStatus = textValue(data, "status");
+                if (!isBlank(payosStatus)) {
+                    return new PaymentStatusResult(payosStatus.trim().toUpperCase(), null);
+                }
+            } catch (Exception ignored) {
+                // Try next candidate URL.
+            }
+        }
+
+        return new PaymentStatusResult(null, "Could not fetch PayOS status");
+    }
+
     private String buildDescription(Order order) {
         String orderCode = order.getOrderCode() == null ? "ORDER" : order.getOrderCode().replaceAll("[^A-Za-z0-9]", "");
         if (orderCode.isEmpty()) {
@@ -211,4 +258,5 @@ public class PayOSPaymentService {
     }
 
     public record PaymentLinkResult(String checkoutUrl, String qrCode, String paymentLinkId, String status, String reason) {}
+    public record PaymentStatusResult(String status, String reason) {}
 }
