@@ -34,16 +34,16 @@ const theme = extendTheme({
     }
   },
   typography: {
-    fontFamily: '"Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif',
-    h1: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 700, letterSpacing: '-0.5px' },
-    h2: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 700, letterSpacing: '-0.3px' },
-    h3: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 700 },
-    h4: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 700 },
-    h5: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 600 },
-    h6: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', fontWeight: 600 },
-    body1: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', lineHeight: 1.6 },
-    body2: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif', lineHeight: 1.6 },
-    button: { textTransform: 'none', fontWeight: 600, fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' }
+    fontFamily: '"Inter", "Segoe UI", sans-serif',
+    h1: { fontFamily: '"Inter", sans-serif', fontWeight: 700, letterSpacing: '-0.5px' },
+    h2: { fontFamily: '"Inter", sans-serif', fontWeight: 700, letterSpacing: '-0.3px' },
+    h3: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
+    h4: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
+    h5: { fontFamily: '"Inter", sans-serif', fontWeight: 600 },
+    h6: { fontFamily: '"Inter", sans-serif', fontWeight: 600 },
+    body1: { fontFamily: '"Inter", sans-serif', lineHeight: 1.6 },
+    body2: { fontFamily: '"Inter", sans-serif', lineHeight: 1.6 },
+    button: { textTransform: 'none', fontWeight: 600, fontFamily: '"Inter", sans-serif' }
   },
   components: {
     MuiCssBaseline: {

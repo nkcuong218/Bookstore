@@ -15,6 +15,7 @@ import Checkout from './pages/Order/Checkout'
 import MyOrders from './pages/Order/MyOrders'
 import OrderDetailUser from './pages/Order/OrderDetailUser'
 import OrderReview from './pages/Order/OrderReview'
+import PaymentPage from './pages/Order/PaymentPage'
 import UserProfile from './pages/User/UserProfile'
 
 // Admin
@@ -142,6 +143,16 @@ function App() {
             <Header />
             <Box sx={{ flexGrow: 1 }}>
               <OrderReview />
+            </Box>
+            <Footer />
+          </Box>
+        } />
+
+        <Route path="/payment" element={
+          <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <Header />
+            <Box sx={{ flexGrow: 1 }}>
+              <PaymentPage />
             </Box>
             <Footer />
           </Box>

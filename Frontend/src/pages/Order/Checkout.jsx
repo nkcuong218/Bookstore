@@ -12,6 +12,11 @@ import userService from '../../apis/userService'
 import addressService from '../../apis/addressService'
 import discountCodeService from '../../apis/discountCodeService'
 import vietnamProvincesService from '../../apis/vietnamProvincesService'
+import {
+  BANK_TRANSFER_INFO,
+  getBankTransferContent,
+  hasBankTransferInfo
+} from '../../utils/payment'
 
 const Checkout = () => {
   const navigate = useNavigate()
@@ -371,7 +376,18 @@ const Checkout = () => {
       navigate('/my-orders', {
         state: {
           message: 'Đặt hàng thành công!',
-          newOrderId: createdOrder?.orderCode || createdOrder?.id
+          newOrderId: createdOrder?.orderCode || createdOrder?.id,
+          paymentMethod: createdOrder?.paymentMethod || payload.paymentMethod,
+          paymentInfo: createdOrder?.paymentMethod === 'BANK_TRANSFER'
+            ? {
+              orderCode: createdOrder?.orderCode || createdOrder?.id,
+              amount: createdOrder?.totalAmount || total,
+              checkoutUrl: createdOrder?.paymentCheckoutUrl || '',
+              qrCode: createdOrder?.paymentQrCode || '',
+              paymentLinkId: createdOrder?.paymentLinkId || '',
+              paymentLinkStatus: createdOrder?.paymentLinkStatus || ''
+            }
+            : null
         }
       })
     } catch (error) {
@@ -856,6 +872,27 @@ const Checkout = () => {
                   label="Chuyển khoản ngân hàng"
                 />
               </RadioGroup>
+
+              {formData.paymentMethod === 'Chuyển khoản' && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Box sx={{ display: 'grid', gap: 0.75 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Thanh toán bằng QR PayOS
+                    </Typography>
+                    <Typography variant="body2">
+                      Sau khi đặt hàng, hệ thống sẽ tạo QR và link thanh toán PayOS trong trang Đơn hàng của tôi.
+                    </Typography>
+                    {hasBankTransferInfo && (
+                      <>
+                        <Typography variant="body2">Ngân hàng dự phòng: {BANK_TRANSFER_INFO.bankName}</Typography>
+                        <Typography variant="body2">Chủ tài khoản: {BANK_TRANSFER_INFO.accountName}</Typography>
+                        <Typography variant="body2">Số tài khoản: {BANK_TRANSFER_INFO.accountNumber}</Typography>
+                        <Typography variant="body2">Nội dung: {getBankTransferContent('MÃ ĐƠN HÀNG')}</Typography>
+                      </>
+                    )}
+                  </Box>
+                </Alert>
+              )}
             </Paper>
           </Grid>
 

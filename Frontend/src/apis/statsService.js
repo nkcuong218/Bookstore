@@ -6,7 +6,7 @@ const statsService = {
    * @returns {Promise<Object>} Dashboard stats object
    */
   getDashboardStats: async () => {
-    return apiClient.get('/api/admin/dashboard')
+    return apiClient.get('/api/admin/dashboard', { authScope: 'admin' })
   }
 }
 

@@ -13,6 +13,7 @@ const HomePage = () => {
   const [books, setBooks] = useState([])
   const [genres, setGenres] = useState([])
   const [genrePage, setGenrePage] = useState(0)
+  const [bookPage, setBookPage] = useState(1)
 
   const genresPerPage = 10
   const totalGenrePages = Math.ceil((genres?.length || 0) / genresPerPage)
@@ -36,7 +37,7 @@ const HomePage = () => {
           bookService.getFeaturedBooks(),
           genreService.getGenres()
         ])
-        setBooks(featuredBooks || [])
+        setBooks((featuredBooks || []).slice(0, 10))
         setGenres(allGenres || [])
       } catch {
         setBooks([])
@@ -57,6 +58,10 @@ const HomePage = () => {
       setGenrePage(totalGenrePages - 1)
     }
   }, [genrePage, totalGenrePages])
+
+  const booksPerPage = 5
+  const totalBookPages = Math.ceil(books.length / booksPerPage)
+  const visibleBooks = books.slice((bookPage - 1) * booksPerPage, bookPage * booksPerPage)
 
   return (
     <Box>
@@ -155,19 +160,56 @@ const HomePage = () => {
             Xem tất cả &gt;
           </Typography>
         </Box>
-        <Grid container spacing={3} justifyContent="center">
-          {books.map((book) => (
-            <Grid item key={book.id}>
-              <BookCard
-                id={book.id}
-                title={book.title}
-                author={book.author}
-                price={book.price}
-                coverUrl={book.coverUrl}
-              />
-            </Grid>
-          ))}
-        </Grid>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          <IconButton
+            onClick={() => setBookPage((prev) => (prev === 1 ? totalBookPages : prev - 1))}
+            disabled={totalBookPages <= 1}
+            size="large"
+            sx={{ mr: 2 }}
+          >
+            <ChevronLeftIcon />
+          </IconButton>
+
+          <Grid
+            container
+            spacing={6}
+            justifyContent="center"
+            key={bookPage}
+            sx={{
+              flexGrow: 1,
+              animation: 'fadeInSlide 0.5s ease-out',
+              '@keyframes fadeInSlide': {
+                '0%': { opacity: 0, transform: 'translateX(15px)' },
+                '100%': { opacity: 1, transform: 'translateX(0)' }
+              }
+            }}
+          >
+            {visibleBooks.map((book, index) => {
+              const rank = (bookPage - 1) * booksPerPage + index + 1;
+              return (
+                <Grid item key={book.id}>
+                  <BookCard
+                    id={book.id}
+                    title={book.title}
+                    author={book.author}
+                    price={book.price}
+                    coverUrl={book.coverUrl}
+                    rank={rank}
+                  />
+                </Grid>
+              )
+            })}
+          </Grid>
+
+          <IconButton
+            onClick={() => setBookPage((prev) => (prev === totalBookPages ? 1 : prev + 1))}
+            disabled={totalBookPages <= 1}
+            size="large"
+            sx={{ ml: 2 }}
+          >
+            <ChevronRightIcon />
+          </IconButton>
+        </Box>
       </Container>
     </Box>
   )

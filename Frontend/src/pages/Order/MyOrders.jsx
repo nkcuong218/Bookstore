@@ -1,13 +1,16 @@
 import {
   Box, Container, Typography, Paper, Chip, Button, Tabs, Tab,
-  Grid, Breadcrumbs, Link, Alert
+  Grid, Breadcrumbs, Link, Alert, Stack
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import QRCode from 'react-qr-code'
 import { formatPrice } from '../../utils/formatPrice'
 import orderService from '../../apis/orderService'
+import { formatPaymentMethodLabel, isBankTransferPayment, hasBankTransferInfo, BANK_TRANSFER_INFO, getBankTransferContent } from '../../utils/payment'
 
 const MyOrders = () => {
   const navigate = useNavigate()
@@ -16,6 +19,8 @@ const MyOrders = () => {
   const [tabValue, setTabValue] = useState('all')
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [newOrderId, setNewOrderId] = useState(null)
+  const paymentInfo = location.state?.paymentInfo || null
+  const payOSQrValue = paymentInfo?.qrCode || paymentInfo?.checkoutUrl || ''
 
   useEffect(() => {
     loadOrders()
@@ -161,6 +166,54 @@ const MyOrders = () => {
           </Alert>
         )}
 
+        {showSuccessMessage && isBankTransferPayment(location.state?.paymentMethod) && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Đơn hàng này chọn chuyển khoản qua PayOS. Mở chi tiết đơn hàng để quét QR hoặc mở link thanh toán.
+          </Alert>
+        )}
+
+        {payOSQrValue && (
+          <Paper sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'primary.main' }}>
+            <Stack spacing={2} direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'flex-start', md: 'center' }}>
+              <Box sx={{ p: 2, bgcolor: '#fff', borderRadius: 2, border: '1px solid #e5e7eb' }}>
+                <QRCode value={payOSQrValue} size={180} />
+              </Box>
+
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
+                  Quét QR để chuyển khoản
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
+                  Đơn hàng: {paymentInfo.orderCode}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
+                  Số tiền: {formatPrice(paymentInfo.amount || 0)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
+                  Nội dung: {getBankTransferContent(paymentInfo.orderCode)}
+                </Typography>
+                {hasBankTransferInfo && (
+                  <Typography variant="body2" color="text.secondary">
+                    TK nhận: {BANK_TRANSFER_INFO.accountName} - {BANK_TRANSFER_INFO.accountNumber} ({BANK_TRANSFER_INFO.bankName})
+                  </Typography>
+                )}
+
+                <Box sx={{ display: 'flex', gap: 1.5, mt: 2, flexWrap: 'wrap' }}>
+                  {paymentInfo.checkoutUrl && (
+                    <Button
+                      variant="contained"
+                      startIcon={<OpenInNewIcon />}
+                      onClick={() => window.open(paymentInfo.checkoutUrl, '_blank', 'noopener,noreferrer')}
+                    >
+                      Mở link thanh toán
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+            </Stack>
+          </Paper>
+        )}
+
         {/* Tabs */}
         <Paper sx={{ mb: 3 }}>
           <Tabs
@@ -225,6 +278,14 @@ const MyOrders = () => {
                       </Typography>
                       <Typography variant="body1">
                         {formatOrderDate(order.createdAt)}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Thanh toán
+                      </Typography>
+                      <Typography variant="body1">
+                        {formatPaymentMethodLabel(order.paymentMethod)}
                       </Typography>
                     </Box>
                   </Box>

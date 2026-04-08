@@ -191,12 +191,12 @@ const Header = () => {
           {/* Cart */}
           <IconButton
             onClick={() => navigate('/cart')}
-            sx={{ color: 'text.primary' }}
+            sx={{ color: 'text.primary', flexDirection: 'column', gap: 0.25 }}
           >
             <Badge badgeContent={cartCount} color="secondary">
               <ShoppingCartOutlinedIcon />
             </Badge>
-            <Typography variant='body2'>Giỏ hàng</Typography>
+            <Typography variant="body2">Giỏ hàng</Typography>
           </IconButton>
 
         </Box>

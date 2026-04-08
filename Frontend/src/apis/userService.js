@@ -43,7 +43,7 @@ const userService = {
     if (params.size !== undefined) queryParams.append('size', params.size)
 
     const queryString = queryParams.toString()
-    return apiClient.get(`/api/admin/users${queryString ? '?' + queryString : ''}`)
+    return apiClient.get(`/api/admin/users${queryString ? '?' + queryString : ''}`, { authScope: 'admin' })
   },
 
   /**
@@ -52,7 +52,7 @@ const userService = {
    * @returns {Promise<Object>} User details
    */
   getUserById: async (id) => {
-    return apiClient.get(`/api/admin/users/${id}`)
+    return apiClient.get(`/api/admin/users/${id}`, { authScope: 'admin' })
   },
 
   /**
@@ -61,7 +61,7 @@ const userService = {
    * @returns {Promise<Object>} Updated user
    */
   toggleUserStatus: async (id) => {
-    return apiClient.patch(`/api/admin/users/${id}/status`)
+    return apiClient.patch(`/api/admin/users/${id}/status`, null, { authScope: 'admin' })
   },
 
   /**
@@ -71,7 +71,7 @@ const userService = {
    * @returns {Promise<Object>} Updated user
    */
   changeUserRole: async (id, role) => {
-    return apiClient.patch(`/api/admin/users/${id}/role?role=${role}`)
+    return apiClient.patch(`/api/admin/users/${id}/role?role=${role}`, null, { authScope: 'admin' })
   },
 
   /**
@@ -80,7 +80,7 @@ const userService = {
    * @returns {Promise<Object>} Success message
    */
   deleteUser: async (id) => {
-    return apiClient.delete(`/api/admin/users/${id}`)
+    return apiClient.delete(`/api/admin/users/${id}`, { authScope: 'admin' })
   }
 }
 

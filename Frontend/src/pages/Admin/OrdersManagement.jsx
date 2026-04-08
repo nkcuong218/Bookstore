@@ -5,6 +5,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility'
 import SearchIcon from '@mui/icons-material/Search'
 import { formatPrice } from '../../utils/formatPrice'
 import orderService from '../../apis/orderService'
+import { formatPaymentMethodLabel } from '../../utils/payment'
 
 const OrdersManagement = () => {
   const navigate = useNavigate()
@@ -114,6 +115,7 @@ const OrdersManagement = () => {
                 <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Email</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Sản phẩm</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Tổng tiền</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Thanh toán</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Trạng thái</th>
                 <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Ngày đặt</th>
                 <th style={{ padding: '12px', textAlign: 'center', fontWeight: 600 }}>Chi tiết</th>
@@ -127,6 +129,7 @@ const OrdersManagement = () => {
                   <td style={{ padding: '12px', color: '#666' }}>{order.email}</td>
                   <td style={{ padding: '12px' }}>{(order.items || []).length} sản phẩm</td>
                   <td style={{ padding: '12px', fontWeight: 600 }}>{formatPrice(calculateOrderTotal(order))}</td>
+                  <td style={{ padding: '12px', color: '#666' }}>{formatPaymentMethodLabel(order.paymentMethod)}</td>
                   <td style={{ padding: '12px' }}>
                     <Chip label={getStatusLabel(order.status)} color={getStatusColor(getStatusLabel(order.status))} size="small" />
                   </td>

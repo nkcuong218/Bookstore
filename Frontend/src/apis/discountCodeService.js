@@ -14,19 +14,19 @@ const discountCodeService = {
   },
 
   getAllCodesAdmin: async () => {
-    return apiClient.get('/api/discount-codes/admin')
+    return apiClient.get('/api/discount-codes/admin', { authScope: 'admin' })
   },
 
   createCodeAdmin: async (payload) => {
-    return apiClient.post('/api/discount-codes/admin', payload)
+    return apiClient.post('/api/discount-codes/admin', payload, { authScope: 'admin' })
   },
 
   updateCodeAdmin: async (id, payload) => {
-    return apiClient.put(`/api/discount-codes/admin/${id}`, payload)
+    return apiClient.put(`/api/discount-codes/admin/${id}`, payload, { authScope: 'admin' })
   },
 
   toggleCodeAdmin: async (id) => {
-    return apiClient.patch(`/api/discount-codes/admin/${id}/toggle`)
+    return apiClient.patch(`/api/discount-codes/admin/${id}/toggle`, null, { authScope: 'admin' })
   }
 }
 

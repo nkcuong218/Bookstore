@@ -34,6 +34,12 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod = PaymentMethod.COD;
 
+    private String paymentCheckoutUrl;
+    @Lob
+    private String paymentQrCode;
+    private String paymentLinkId;
+    private String paymentLinkStatus;
+
     private String note;
 
     private String productDiscountCode;

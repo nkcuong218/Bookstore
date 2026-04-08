@@ -39,7 +39,7 @@ const orderService = {
     if (params.size !== undefined) queryParams.append('size', params.size)
 
     const queryString = queryParams.toString()
-    return apiClient.get(`/api/orders/admin${queryString ? '?' + queryString : ''}`)
+    return apiClient.get(`/api/orders/admin${queryString ? '?' + queryString : ''}`, { authScope: 'admin' })
   },
 
   /**
@@ -49,7 +49,7 @@ const orderService = {
    * @returns {Promise<Object>} Updated order
    */
   updateOrderStatus: async (id, status) => {
-    return apiClient.patch(`/api/orders/${id}/status?status=${status}`)
+    return apiClient.patch(`/api/orders/${id}/status?status=${status}`, null, { authScope: 'admin' })
   },
 
   /**

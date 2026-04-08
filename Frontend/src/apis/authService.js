@@ -45,6 +45,10 @@ const authService = {
 
     const resolvedScope = resolveScope(scope)
     const keys = getStorageKeys(resolvedScope)
+    const oppositeKeys = getStorageKeys(resolvedScope === 'admin' ? 'customer' : 'admin')
+
+    localStorage.removeItem(oppositeKeys.token)
+    localStorage.removeItem(oppositeKeys.user)
     localStorage.setItem(keys.token, authResponse.token)
     localStorage.setItem(keys.user, JSON.stringify(toStoredUser(authResponse)))
     emitAuthChange(resolvedScope)
@@ -80,8 +84,11 @@ const authService = {
   logout: (scope) => {
     const resolvedScope = resolveScope(scope)
     const keys = getStorageKeys(resolvedScope)
+    const oppositeKeys = getStorageKeys(resolvedScope === 'admin' ? 'customer' : 'admin')
     localStorage.removeItem(keys.token)
     localStorage.removeItem(keys.user)
+    localStorage.removeItem(oppositeKeys.token)
+    localStorage.removeItem(oppositeKeys.user)
     emitAuthChange(resolvedScope)
   },
 

@@ -1,13 +1,22 @@
 import {
-  Box, Container, Typography, Paper, Grid, Chip, Divider,
+  Alert, Box, Container, Typography, Paper, Grid, Chip, Divider,
   Breadcrumbs, Link, Button, Table, TableBody, TableCell,
   TableHead, TableRow
 } from '@mui/material'
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import QRCode from 'react-qr-code'
 import { formatPrice } from '../../utils/formatPrice'
 import orderService from '../../apis/orderService'
+import {
+  BANK_TRANSFER_INFO,
+  formatPaymentMethodLabel,
+  getBankTransferContent,
+  hasBankTransferInfo,
+  isBankTransferPayment
+} from '../../utils/payment'
 
 const OrderDetailUser = () => {
   const { id } = useParams()
@@ -74,12 +83,31 @@ const OrderDetailUser = () => {
   }
 
   const calculateSubtotal = () => {
-    if (!orderData?.items) return 0
-    return orderData.items.reduce((sum, item) => sum + (item.subtotal || item.price * item.quantity), 0)
+    return orderItems.reduce((sum, item) => {
+      const price = Number(item?.price || 0)
+      const quantity = Number(item?.quantity || 0)
+      const subtotal = Number(item?.subtotal || (price * quantity) || 0)
+      return sum + subtotal
+    }, 0)
   }
 
   const calculateTotal = () => {
     return orderData?.totalAmount || 0
+  }
+
+  const hasPayOSPaymentInfo = Boolean(orderData?.paymentQrCode || orderData?.paymentCheckoutUrl)
+  const payOSQrValue = orderData?.paymentQrCode || orderData?.paymentCheckoutUrl || ''
+  const canRenderQr = typeof payOSQrValue === 'string' && payOSQrValue.trim().length > 0 && payOSQrValue.length <= 2000
+  const orderItems = (Array.isArray(orderData?.items) ? orderData.items : []).filter(Boolean)
+
+  const formatOrderDate = (value) => {
+    try {
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return '-'
+      return date.toLocaleDateString('vi-VN')
+    } catch {
+      return '-'
+    }
   }
 
   if (!orderData) {
@@ -156,7 +184,7 @@ const OrderDetailUser = () => {
                     Ngày đặt:
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {new Date(orderData.createdAt).toLocaleDateString('vi-VN')}
+                    {formatOrderDate(orderData.createdAt)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2 }}>
@@ -174,9 +202,59 @@ const OrderDetailUser = () => {
                     Thanh toán:
                   </Typography>
                   <Typography variant="body2">
-                    {orderData.paymentMethod}
+                    {formatPaymentMethodLabel(orderData.paymentMethod)}
                   </Typography>
                 </Box>
+                {isBankTransferPayment(orderData.paymentMethod) && (
+                  <Alert severity={hasPayOSPaymentInfo || hasBankTransferInfo ? 'info' : 'warning'}>
+                    <Box sx={{ display: 'grid', gap: 1.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        Thông tin chuyển khoản
+                      </Typography>
+
+                      {canRenderQr ? (
+                        <Box sx={{ p: 2, bgcolor: '#fff', width: 'fit-content', borderRadius: 2 }}>
+                          <QRCode value={payOSQrValue} size={180} />
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          QR PayOS sẽ hiển thị sau khi hệ thống tạo link thanh toán.
+                        </Typography>
+                      )}
+
+                      {orderData.paymentCheckoutUrl && (
+                        <Button
+                          variant="outlined"
+                          startIcon={<OpenInNewIcon />}
+                          onClick={() => window.open(orderData.paymentCheckoutUrl, '_blank', 'noopener,noreferrer')}
+                          sx={{ width: 'fit-content' }}
+                        >
+                          Mở link thanh toán PayOS
+                        </Button>
+                      )}
+
+                      {orderData.paymentLinkStatus && (
+                        <Typography variant="body2" color={String(orderData.paymentLinkStatus).startsWith('FAILED') ? 'error.main' : 'text.secondary'}>
+                          Trạng thái PayOS: {orderData.paymentLinkStatus}
+                        </Typography>
+                      )}
+
+                      <Typography variant="body2">Nội dung: {getBankTransferContent(orderData.orderCode || orderData.id)}</Typography>
+
+                      {hasBankTransferInfo ? (
+                        <>
+                          <Typography variant="body2">Ngân hàng: {BANK_TRANSFER_INFO.bankName}</Typography>
+                          <Typography variant="body2">Chủ tài khoản: {BANK_TRANSFER_INFO.accountName}</Typography>
+                          <Typography variant="body2">Số tài khoản: {BANK_TRANSFER_INFO.accountNumber}</Typography>
+                        </>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Không có thông tin tài khoản tĩnh. Hãy ưu tiên quét QR hoặc mở link PayOS để thanh toán.
+                        </Typography>
+                      )}
+                    </Box>
+                  </Alert>
+                )}
                 {orderData.note && (
                   <Box sx={{ display: 'flex', gap: 2 }}>
                     <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
@@ -216,7 +294,7 @@ const OrderDetailUser = () => {
             {/* Products List */}
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                Sản phẩm ({orderData.items.length})
+                Sản phẩm ({orderItems.length})
               </Typography>
               <Table>
                 <TableHead>
@@ -228,7 +306,7 @@ const OrderDetailUser = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {orderData.items.map((item) => (
+                  {orderItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -255,7 +333,7 @@ const OrderDetailUser = () => {
                       <TableCell align="right">{formatPrice(item.price)}</TableCell>
                       <TableCell align="center">{item.quantity}</TableCell>
                       <TableCell align="right" sx={{ fontWeight: 600 }}>
-                        {formatPrice(item.subtotal || item.price * item.quantity)}
+                        {formatPrice(Number(item?.subtotal || (Number(item?.price || 0) * Number(item?.quantity || 0)) || 0))}
                       </TableCell>
                     </TableRow>
                   ))}

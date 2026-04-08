@@ -22,6 +22,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final DiscountCodeRepository discountCodeRepository;
     private final UserDiscountCodeRepository userDiscountCodeRepository;
+    private final PayOSPaymentService payOSPaymentService;
 
     @Transactional
     public OrderDto.Response createOrder(OrderDto.CreateRequest req, Long userId) {
@@ -105,6 +106,10 @@ public class OrderService {
         orderItems.forEach(item -> item.setOrder(finalOrder));
         order.setItems(orderItems);
         order = orderRepository.save(order);
+
+        if (paymentMethod == Order.PaymentMethod.BANK_TRANSFER) {
+            ensurePaymentLink(order);
+        }
 
         return OrderDto.Response.fromEntity(order);
     }
@@ -217,6 +222,7 @@ public class OrderService {
                 .stream().map(OrderDto.Response::fromEntity).toList();
     }
 
+    @Transactional
     public OrderDto.Response getOrderById(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng!"));
@@ -226,7 +232,46 @@ public class OrderService {
             throw new RuntimeException("Bạn không có quyền xem đơn hàng này!");
         }
 
+        if (order.getPaymentMethod() == Order.PaymentMethod.BANK_TRANSFER) {
+            ensurePaymentLink(order);
+        }
+
         return OrderDto.Response.fromEntity(order);
+    }
+
+    private void ensurePaymentLink(Order order) {
+        if (order == null || order.getPaymentMethod() != Order.PaymentMethod.BANK_TRANSFER) {
+            return;
+        }
+
+        boolean hasExistingPayOSData = !isBlank(order.getPaymentCheckoutUrl()) || !isBlank(order.getPaymentQrCode());
+        if (hasExistingPayOSData) {
+            return;
+        }
+
+        List<OrderItem> items = order.getItems() == null ? List.of() : order.getItems();
+        PayOSPaymentService.PaymentLinkResult paymentLinkResult = payOSPaymentService.createPaymentLink(order, items);
+        if (paymentLinkResult == null) {
+            order.setPaymentLinkStatus("FAILED");
+            orderRepository.save(order);
+            return;
+        }
+
+        order.setPaymentCheckoutUrl(paymentLinkResult.checkoutUrl());
+        order.setPaymentQrCode(paymentLinkResult.qrCode());
+        order.setPaymentLinkId(paymentLinkResult.paymentLinkId());
+
+        String status = isBlank(paymentLinkResult.status()) ? "PENDING" : paymentLinkResult.status();
+        String reason = paymentLinkResult.reason();
+        if (!isBlank(reason) && status.startsWith("FAILED")) {
+            status = status + ": " + reason;
+        }
+        order.setPaymentLinkStatus(status);
+        orderRepository.save(order);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     @Transactional

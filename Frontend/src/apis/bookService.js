@@ -59,7 +59,7 @@ const bookService = {
    * @returns {Promise<Object>} Created book
    */
   createBook: async (data) => {
-    return apiClient.post('/api/books', data)
+    return apiClient.post('/api/books', data, { authScope: 'admin' })
   },
 
   /**
@@ -69,7 +69,7 @@ const bookService = {
    * @returns {Promise<Object>} Updated book
    */
   updateBook: async (id, data) => {
-    return apiClient.put(`/api/books/${id}`, data)
+    return apiClient.put(`/api/books/${id}`, data, { authScope: 'admin' })
   },
 
   /**
@@ -78,7 +78,7 @@ const bookService = {
    * @returns {Promise<Object>} Success message
    */
   deleteBook: async (id) => {
-    return apiClient.delete(`/api/books/${id}`)
+    return apiClient.delete(`/api/books/${id}`, { authScope: 'admin' })
   }
 }
 

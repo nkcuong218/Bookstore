@@ -1,4 +1,4 @@
-import { Box, Container, Typography, Grid, Chip, FormControl, Select, MenuItem } from '@mui/material'
+import { Box, Container, Typography, Grid, Chip, FormControl, Select, MenuItem, Pagination } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import BookCard from '../../components/BookCard/BookCard'
@@ -13,6 +13,9 @@ const ListBook = () => {
   const [books, setBooks] = useState([])
   const [genres, setGenres] = useState([])
   const [loading, setLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalElements, setTotalElements] = useState(0)
 
   const keyword = new URLSearchParams(location.search).get('keyword')?.trim() || ''
   const genreFromQuery = new URLSearchParams(location.search).get('genre')?.trim() || ''
@@ -23,7 +26,8 @@ const ListBook = () => {
     } else {
       setSelectedGenre(allLabel)
     }
-  }, [genreFromQuery])
+    setCurrentPage(1)
+  }, [genreFromQuery, keyword])
 
   useEffect(() => {
     const fetchGenres = async () => {
@@ -52,7 +56,7 @@ const ListBook = () => {
         const response = await bookService.getBooks({
           keyword: keyword || undefined,
           genre: selectedGenre === allLabel ? undefined : selectedGenre,
-          page: 0,
+          page: currentPage - 1,
           size: 100,
           sortBy: sortMap[sortBy] || 'newest'
         })
@@ -63,15 +67,19 @@ const ListBook = () => {
           : items
 
         setBooks(finalItems)
+        setTotalPages(response?.totalPages || 1)
+        setTotalElements(response?.totalElements || items.length)
       } catch {
         setBooks([])
+        setTotalPages(1)
+        setTotalElements(0)
       } finally {
         setLoading(false)
       }
     }
 
     fetchBooks()
-  }, [selectedGenre, sortBy, keyword])
+  }, [selectedGenre, sortBy, keyword, currentPage])
 
   return (
     <Box sx={{ bgcolor: '#f9f9f9', minHeight: '100vh', py: 4 }}>
@@ -83,8 +91,8 @@ const ListBook = () => {
           </Typography>
           <Typography variant="body1" color="text.secondary">
             {keyword
-              ? `Tìm thấy ${books.length} sách phù hợp`
-              : `Khám phá bộ sưu tập ${books.length} cuốn sách tuyệt vời của chúng tôi`}
+              ? `Tìm thấy ${totalElements} sách phù hợp`
+              : `Khám phá bộ sưu tập ${totalElements} cuốn sách tuyệt vời của chúng tôi`}
           </Typography>
         </Box>
 
@@ -105,7 +113,7 @@ const ListBook = () => {
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <Chip
               label={allLabel}
-              onClick={() => setSelectedGenre(allLabel)}
+              onClick={() => { setSelectedGenre(allLabel); setCurrentPage(1); }}
               color={selectedGenre === allLabel ? 'primary' : 'default'}
               sx={{ fontWeight: selectedGenre === allLabel ? 'bold' : 'normal' }}
             />
@@ -113,7 +121,7 @@ const ListBook = () => {
               <Chip
                 key={genre}
                 label={genre}
-                onClick={() => setSelectedGenre(genre)}
+                onClick={() => { setSelectedGenre(genre); setCurrentPage(1); }}
                 color={selectedGenre === genre ? 'primary' : 'default'}
                 sx={{ fontWeight: selectedGenre === genre ? 'bold' : 'normal' }}
               />
@@ -128,7 +136,7 @@ const ListBook = () => {
             <FormControl size="small" sx={{ minWidth: 180 }}>
               <Select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
+                onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
               >
                 <MenuItem value="featured">Nổi bật</MenuItem>
                 <MenuItem value="title">Tên sách (A-Z)</MenuItem>
@@ -165,6 +173,19 @@ const ListBook = () => {
             <Typography variant="h6" color="text.secondary">
               Không tìm thấy sách trong danh mục này
             </Typography>
+          </Box>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={totalPages}
+              page={currentPage}
+              onChange={(e, value) => setCurrentPage(value)}
+              color="primary"
+              size="large"
+            />
           </Box>
         )}
       </Container>

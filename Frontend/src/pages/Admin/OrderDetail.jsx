@@ -20,6 +20,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import SaveIcon from '@mui/icons-material/Save'
 import { formatPrice } from '../../utils/formatPrice'
 import orderService from '../../apis/orderService'
+import { formatPaymentMethodLabel } from '../../utils/payment'
 
 const STATUS_OPTIONS = [
   { value: 'PENDING', label: 'Đang xử lý' },
@@ -179,7 +180,7 @@ const OrderDetail = () => {
                 <TextField
                   fullWidth
                   label="Phương thức thanh toán"
-                  value={orderData.paymentMethod}
+                  value={formatPaymentMethodLabel(orderData.paymentMethod)}
                   disabled
                 />
               </Grid>

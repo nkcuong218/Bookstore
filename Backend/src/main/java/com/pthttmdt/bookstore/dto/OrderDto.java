@@ -70,6 +70,10 @@ public class OrderDto {
         private Long totalAmount;
         private List<ItemResponse> items;
         private LocalDateTime createdAt;
+        private String paymentCheckoutUrl;
+        private String paymentQrCode;
+        private String paymentLinkId;
+        private String paymentLinkStatus;
 
         public static Response fromEntity(com.pthttmdt.bookstore.entity.Order order) {
             Response res = new Response();
@@ -88,6 +92,10 @@ public class OrderDto {
             res.discount = order.getDiscount();
             res.totalAmount = order.getTotalAmount();
             res.createdAt = order.getCreatedAt();
+            res.paymentCheckoutUrl = order.getPaymentCheckoutUrl();
+            res.paymentQrCode = order.getPaymentQrCode();
+            res.paymentLinkId = order.getPaymentLinkId();
+            res.paymentLinkStatus = order.getPaymentLinkStatus();
 
             if (order.getItems() != null) {
                 res.items = order.getItems().stream().map(item -> {
