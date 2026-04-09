@@ -35,8 +35,8 @@ const Footer = () => {
           </Grid>
         </Grid>
         <Box sx={{ textAlign: 'center', mt: 6, pt: 3, borderTop: '1px solid #eeeeee' }}>
-          <Typography variant="body2">
-            © 2024 Nhà sách Barnes & Noble, Inc.
+          <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+            © 2024 HCBook
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 1 }}>
             <Link href="#" color="inherit" variant="body2">Điều khoản sử dụng</Link>

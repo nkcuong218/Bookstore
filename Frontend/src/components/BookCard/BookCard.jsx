@@ -126,7 +126,7 @@ const BookCard = ({ id, title, author, price, coverUrl }) => {
         onClick={handleCardClick}
         sx={{ p: '0 !important', textAlign: 'center' }}
       >
-        <Typography variant="subtitle1" component="div" sx={{ fontFamily: '"Georgia", serif', fontWeight: 'bold', lineHeight: 1.2, minHeight: '2.4em', mb: 0.5 }}>
+        <Typography variant="subtitle1" component="div" sx={{ fontWeight: 500, lineHeight: 1.25, minHeight: '2.5em', mb: 0.5 }}>
           {title}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>

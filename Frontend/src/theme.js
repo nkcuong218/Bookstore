@@ -34,16 +34,16 @@ const theme = extendTheme({
     }
   },
   typography: {
-    fontFamily: '"Inter", "Segoe UI", sans-serif',
-    h1: { fontFamily: '"Inter", sans-serif', fontWeight: 700, letterSpacing: '-0.5px' },
-    h2: { fontFamily: '"Inter", sans-serif', fontWeight: 700, letterSpacing: '-0.3px' },
-    h3: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
-    h4: { fontFamily: '"Inter", sans-serif', fontWeight: 700 },
-    h5: { fontFamily: '"Inter", sans-serif', fontWeight: 600 },
-    h6: { fontFamily: '"Inter", sans-serif', fontWeight: 600 },
-    body1: { fontFamily: '"Inter", sans-serif', lineHeight: 1.6 },
-    body2: { fontFamily: '"Inter", sans-serif', lineHeight: 1.6 },
-    button: { textTransform: 'none', fontWeight: 600, fontFamily: '"Inter", sans-serif' }
+    fontFamily: 'Arial, sans-serif',
+    h1: { fontFamily: 'Arial, sans-serif', fontWeight: 500 },
+    h2: { fontFamily: 'Arial, sans-serif', fontWeight: 500 },
+    h3: { fontFamily: 'Arial, sans-serif', fontWeight: 500 },
+    h4: { fontFamily: 'Arial, sans-serif', fontWeight: 500 },
+    h5: { fontFamily: 'Arial, sans-serif', fontWeight: 500 },
+    h6: { fontFamily: 'Arial, sans-serif', fontWeight: 500 },
+    body1: { fontFamily: 'Arial, sans-serif', lineHeight: 1.55, fontWeight: 400 },
+    body2: { fontFamily: 'Arial, sans-serif', lineHeight: 1.55, fontWeight: 400 },
+    button: { textTransform: 'none', fontWeight: 500, fontFamily: 'Arial, sans-serif' }
   },
   components: {
     MuiCssBaseline: {
@@ -52,9 +52,9 @@ const theme = extendTheme({
           fontSize: '16px'
         },
         body: {
-          fontFamily: '"Inter", "Segoe UI", sans-serif',
-          lineHeight: 1.6,
-          letterSpacing: '0.3px',
+          fontFamily: 'Arial, sans-serif',
+          lineHeight: 1.55,
+          letterSpacing: '0px',
           textRendering: 'optimizeLegibility',
           WebkitFontSmoothing: 'antialiased',
           MozOsxFontSmoothing: 'grayscale',

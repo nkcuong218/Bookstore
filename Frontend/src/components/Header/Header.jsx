@@ -91,9 +91,9 @@ const Header = () => {
         <Typography
           variant="h4"
           onClick={() => navigate('/')}
-          sx={{ fontWeight: 'bold', color: 'primary.main', cursor: 'pointer' }}
+          sx={{ fontWeight: 700, color: 'primary.main', cursor: 'pointer' }}
         >
-          Nhà sách
+          HCBook
         </Typography>
 
         {/* Search */}
@@ -215,7 +215,7 @@ const Header = () => {
                   navigate('/')
                 }
               }}
-              sx={{ cursor: 'pointer', fontWeight: 600, '&:hover': { color: 'primary.main' } }}
+              sx={{ cursor: 'pointer', fontWeight: 500, '&:hover': { color: 'primary.main' } }}
             >
               {item}
             </Typography>

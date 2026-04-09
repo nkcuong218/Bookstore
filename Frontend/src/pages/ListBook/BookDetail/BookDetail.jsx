@@ -346,7 +346,7 @@ const BookDetail = () => {
               }}>
                 <LocalShippingOutlinedIcon color="primary" />
                 <Typography variant="body2">
-                  <strong>Miễn phí vận chuyển</strong> cho đơn hàng từ 40$ trở lên
+                  <strong>Miễn phí vận chuyển</strong> cho đơn hàng từ 800.000 VNĐ trở lên
                 </Typography>
               </Box>
 

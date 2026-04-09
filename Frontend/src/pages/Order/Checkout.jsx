@@ -495,7 +495,7 @@ const Checkout = () => {
 
                               <Box sx={{ flex: 1 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                  <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', lineHeight: 1.2 }}>
+                                  <Typography sx={{ fontWeight: 700, fontSize: '1.08rem', lineHeight: 1.2 }}>
                                     {addr.recipientName}
                                   </Typography>
                                   <Typography sx={{ color: '#4b5563', fontWeight: 500, fontSize: '1rem' }}>
@@ -510,7 +510,7 @@ const Checkout = () => {
                                         bgcolor: '#efeff0',
                                         color: '#3f3f46',
                                         fontSize: '0.82rem',
-                                        fontWeight: 600,
+                                        fontWeight: 500,
                                         lineHeight: 1.2
                                       }}
                                     >
@@ -549,7 +549,7 @@ const Checkout = () => {
                             value="new"
                             sx={{ p: 0.5 }}
                           />
-                          <Typography sx={{ fontWeight: 800, fontSize: '1.15rem' }}>
+                          <Typography sx={{ fontWeight: 700, fontSize: '1.08rem' }}>
                             Sử dụng địa chỉ khác
                           </Typography>
                         </Box>

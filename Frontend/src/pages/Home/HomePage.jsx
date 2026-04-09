@@ -73,34 +73,34 @@ const HomePage = () => {
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'nowrap', overflow: 'hidden' }}>
             {visibleGenres.map((genre) => (
-            <Box
-              key={genre.id || genre.name}
-              sx={{
-                width: 100,
-                height: 100,
-                borderRadius: '50%',
-                bgcolor: '#d5efe9',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                border: '1px solid #a9ddd1',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                flexShrink: 0,
-                boxShadow: '0 4px 10px rgba(15, 23, 42, 0.08)',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 8px 16px rgba(15, 23, 42, 0.14)',
-                  borderColor: '#7cbfb2'
-                }
-              }}
-              onClick={() => navigate(`/books?genre=${encodeURIComponent(genre.name || '')}`)}
-            >
-              <Typography variant="body2" sx={{ fontWeight: 700, textAlign: 'center', px: 1, color: '#1f5f56' }}>
-                {genre.name || 'Khác'}
-              </Typography>
-            </Box>
-          ))}
+              <Box
+                key={genre.id || genre.name}
+                sx={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: '50%',
+                  bgcolor: '#d5efe9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  border: '1px solid #a9ddd1',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  flexShrink: 0,
+                  boxShadow: '0 4px 10px rgba(15, 23, 42, 0.08)',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 16px rgba(15, 23, 42, 0.14)',
+                    borderColor: '#7cbfb2'
+                  }
+                }}
+                onClick={() => navigate(`/books?genre=${encodeURIComponent(genre.name || '')}`)}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 700, textAlign: 'center', px: 1, color: '#1f5f56' }}>
+                  {genre.name || 'Khác'}
+                </Typography>
+              </Box>
+            ))}
           </Box>
 
           <IconButton
