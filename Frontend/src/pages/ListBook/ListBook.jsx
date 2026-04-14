@@ -16,6 +16,26 @@ const ListBook = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalElements, setTotalElements] = useState(0)
+  const [booksPerPage, setBooksPerPage] = useState(12)
+  const [booksColumns, setBooksColumns] = useState(4)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('pagePaginationConfig')
+    if (!saved) return
+
+    try {
+      const parsed = JSON.parse(saved)
+      const parsedColumns = Math.max(1, parseInt(parsed.booksColumns) || 4)
+      const parsedRows = Math.max(1, parseInt(parsed.booksRows) || 3)
+      const parsedTotal = Math.max(1, parseInt(parsed.booksPerPage) || parsedRows * parsedColumns)
+
+      setBooksColumns(parsedColumns)
+      setBooksPerPage(parsedTotal)
+    } catch {
+      setBooksColumns(4)
+      setBooksPerPage(12)
+    }
+  }, [])
 
   const keyword = new URLSearchParams(location.search).get('keyword')?.trim() || ''
   const genreFromQuery = new URLSearchParams(location.search).get('genre')?.trim() || ''
@@ -43,6 +63,10 @@ const ListBook = () => {
   }, [])
 
   useEffect(() => {
+    setCurrentPage(1)
+  }, [booksPerPage])
+
+  useEffect(() => {
     const fetchBooks = async () => {
       setLoading(true)
       try {
@@ -57,7 +81,7 @@ const ListBook = () => {
           keyword: keyword || undefined,
           genre: selectedGenre === allLabel ? undefined : selectedGenre,
           page: currentPage - 1,
-          size: 100,
+          size: booksPerPage,
           sortBy: sortMap[sortBy] || 'newest'
         })
 
@@ -79,7 +103,7 @@ const ListBook = () => {
     }
 
     fetchBooks()
-  }, [selectedGenre, sortBy, keyword, currentPage])
+  }, [selectedGenre, sortBy, keyword, currentPage, booksPerPage])
 
   return (
     <Box sx={{ bgcolor: '#f9f9f9', minHeight: '100vh', py: 4 }}>
@@ -157,7 +181,7 @@ const ListBook = () => {
         ) : books.length > 0 ? (
           <Grid container spacing={3}>
             {books.map((book) => (
-              <Grid item xs={12} sm={6} md={4} lg={2.4} key={book.id}>
+              <Grid item key={book.id} sx={{ width: { xs: '100%', sm: '50%', md: `${100 / booksColumns}%` } }}>
                 <BookCard
                   id={book.id}
                   title={book.title}

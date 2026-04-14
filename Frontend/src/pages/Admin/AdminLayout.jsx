@@ -40,7 +40,7 @@ const AdminLayout = () => {
     { text: 'Quản lý đơn hàng', icon: <ShoppingCartIcon />, path: '/admin/orders' },
     { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users' },
     { text: 'Mã giảm giá', icon: <LocalOfferIcon />, path: '/admin/discount-codes' },
-    { text: 'Quản lý giao diện', icon: <DashboardCustomizeIcon />, path: '/admin/banners' }
+    { text: 'Quản lý giao diện', icon: <DashboardCustomizeIcon />, path: '/admin/interface' }
   ]
 
   const handleDrawerToggle = () => {

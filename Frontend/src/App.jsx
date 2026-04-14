@@ -31,7 +31,7 @@ import UsersManagement from './pages/Admin/UsersManagement'
 import AddUser from './pages/Admin/AddUser'
 import EditUser from './pages/Admin/EditUser'
 import DiscountCodesManagement from './pages/Admin/DiscountCodesManagement'
-import BannersManagement from './pages/Admin/BannersManagement'
+import InterfaceManagement from './pages/Admin/InterfaceManagement'
 import authService from './apis/authService'
 
 // Protected Route Component
@@ -211,7 +211,10 @@ function App() {
           <Route path="users/add" element={<AddUser />} />
           <Route path="users/edit/:id" element={<EditUser />} />
           <Route path="discount-codes" element={<DiscountCodesManagement />} />
-          <Route path="banners" element={<BannersManagement />} />
+          <Route path="interface" element={<InterfaceManagement />} />
+          <Route path="interface/homepage" element={<Navigate to="/admin/interface" replace />} />
+          <Route path="interface/books" element={<Navigate to="/admin/interface" replace />} />
+          <Route path="banners" element={<Navigate to="/admin/interface" replace />} />
           <Route path="categories" element={
             <Box sx={{ textAlign: 'center', py: 8 }}>
               <h2>Quản lý thể loại</h2>

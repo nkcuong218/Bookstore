@@ -1,4 +1,4 @@
-import { Box, Container, Typography, Grid, Button, IconButton } from '@mui/material'
+import { Box, Container, Typography, Grid, IconButton } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -9,10 +9,13 @@ import BannerCarousel from '../../components/Banner/BannerCarousel'
 import bookService from '../../apis/bookService'
 import genreService from '../../apis/genreService'
 
+const defaultHomeSections = [{ id: 1, title: 'Sách bán chạy', disablePagination: true, topX: 10, columns: 5, rows: 2, dataSource: 'bestseller' }]
+const defaultPaginationConfig = { homeGenresPerPage: 10, booksPerPage: 12 }
+
 const BookSection = ({ section }) => {
   const [bookPage, setBookPage] = useState(1)
   const [booksState, setBooksState] = useState([])
-  
+
   useEffect(() => {
     const fetchSectionData = async () => {
       let resData = []
@@ -28,8 +31,8 @@ const BookSection = ({ section }) => {
           // Tạm thời lấy sách featured cho phần Khuyến mại (sau này có API getSaleBooks thì thay)
           resData = await bookService.getFeaturedBooks()
         }
-      } catch(e) {
-        console.error(e)
+      } catch {
+        resData = []
       }
       setBooksState(Array.isArray(resData) ? resData : [])
     }
@@ -38,11 +41,11 @@ const BookSection = ({ section }) => {
 
   const cols = section.columns || 5
   const rows = section.rows || 2
-  
+
   // If sliding (pagination enabled), we show 1 row per page (cols items)
   // If static grid (pagination disabled), we show a static block of (cols * rows) items
   const booksPerPage = section.disablePagination ? (cols * rows) : cols
-  
+
   const maxBooks = section.disablePagination ? (cols * rows) : (section.topX || 10)
   const displayBooks = booksState.slice(0, maxBooks)
   const totalBookPages = Math.ceil(displayBooks.length / booksPerPage)
@@ -82,7 +85,7 @@ const BookSection = ({ section }) => {
           }}
         >
           {(section.disablePagination ? displayBooks : visibleBooks).map((book, index) => {
-            const rank = section.disablePagination ? index + 1 : (bookPage - 1) * booksPerPage + index + 1;
+            const rank = section.disablePagination ? index + 1 : (bookPage - 1) * booksPerPage + index + 1
             return (
               <Grid item key={book.id} sx={{ width: { xs: '100%', sm: '50%', md: `${100 / (section.columns || 5)}%` }, display: 'flex', justifyContent: 'center' }}>
                 <BookCard
@@ -117,7 +120,7 @@ const HomePage = () => {
   const navigate = useNavigate()
   const [genres, setGenres] = useState([])
   const [genrePage, setGenrePage] = useState(0)
-  const defaultHomeSections = [{ id: 1, title: 'Sách bán chạy', disablePagination: true, topX: 10, columns: 5, rows: 2, dataSource: 'bestseller' }]
+  const [paginationConfig, setPaginationConfig] = useState(defaultPaginationConfig)
 
   // HomePage sections config
   const [homeSections] = useState(() => {
@@ -128,8 +131,23 @@ const HomePage = () => {
     return defaultHomeSections
   })
 
+  useEffect(() => {
+    const saved = localStorage.getItem('pagePaginationConfig')
+    if (!saved) return
+
+    try {
+      const parsed = JSON.parse(saved)
+      setPaginationConfig({
+        homeGenresPerPage: parsed.homeGenresPerPage || defaultPaginationConfig.homeGenresPerPage,
+        booksPerPage: parsed.booksPerPage || defaultPaginationConfig.booksPerPage
+      })
+    } catch {
+      setPaginationConfig(defaultPaginationConfig)
+    }
+  }, [])
+
   // Only genres for top row nav
-  const genresPerPage = 10
+  const genresPerPage = paginationConfig.homeGenresPerPage
   const totalGenrePages = Math.ceil((genres?.length || 0) / genresPerPage)
   const visibleGenres = genres.slice(genrePage * genresPerPage, (genrePage + 1) * genresPerPage)
   const canRotateGenres = totalGenrePages > 1

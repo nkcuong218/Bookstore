@@ -11,6 +11,8 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import bannerService from '../../apis/bannerService'
 
+const defaultPaginationConfig = { homeGenresPerPage: 10 }
+
 const BannersManagement = () => {
   const [banners, setBanners] = useState([])
   const [loading, setLoading] = useState(false)
@@ -25,14 +27,27 @@ const BannersManagement = () => {
   const [homeSections, setHomeSections] = useState([
     { id: 1, title: 'Sách bán chạy', disablePagination: true, topX: 10, columns: 5, rows: 2, dataSource: 'bestseller' }
   ])
+  const [paginationConfig, setPaginationConfig] = useState(defaultPaginationConfig)
 
   useEffect(() => {
     const savedSections = localStorage.getItem('homeSectionsConfig')
     if (savedSections) {
       try {
         setHomeSections(JSON.parse(savedSections))
-      } catch (e) {
-        console.error(e)
+      } catch {
+        setHomeSections([{ id: 1, title: 'Sách bán chạy', disablePagination: true, topX: 10, columns: 5, rows: 2, dataSource: 'bestseller' }])
+      }
+    }
+
+    const savedPagination = localStorage.getItem('pagePaginationConfig')
+    if (savedPagination) {
+      try {
+        const parsed = JSON.parse(savedPagination)
+        setPaginationConfig({
+          homeGenresPerPage: parsed.homeGenresPerPage || defaultPaginationConfig.homeGenresPerPage
+        })
+      } catch {
+        setPaginationConfig(defaultPaginationConfig)
       }
     }
   }, [])
@@ -40,6 +55,15 @@ const BannersManagement = () => {
   const handleSaveSections = () => {
     localStorage.setItem('homeSectionsConfig', JSON.stringify(homeSections))
     alert('Đã lưu cấu hình các chuyên mục trang chủ!')
+  }
+
+  const handleSavePaginationConfig = () => {
+    const nextConfig = {
+      homeGenresPerPage: Math.max(1, parseInt(paginationConfig.homeGenresPerPage) || defaultPaginationConfig.homeGenresPerPage)
+    }
+    setPaginationConfig(nextConfig)
+    localStorage.setItem('pagePaginationConfig', JSON.stringify(nextConfig))
+    alert('Đã lưu cấu hình phân trang cho trang chủ!')
   }
 
   const handleAddSection = () => {
@@ -309,8 +333,8 @@ const BannersManagement = () => {
                     <KeyboardArrowDownIcon />
                   </IconButton>
                 </Box>
-                <IconButton 
-                  color="error" 
+                <IconButton
+                  color="error"
                   sx={{ position: 'absolute', top: 8, right: 8 }}
                   onClick={() => handleRemoveSection(section.id)}
                 >
@@ -331,9 +355,9 @@ const BannersManagement = () => {
                         <MenuItem value="promotion">Sách khuyến mại</MenuItem>
                       </Select>
                     </FormControl>
-                    <TextField 
-                      fullWidth 
-                      label="Tiêu đề hiển thị" 
+                    <TextField
+                      fullWidth
+                      label="Tiêu đề hiển thị"
                       value={section.title}
                       onChange={(e) => handleUpdateSection(section.id, 'title', e.target.value)}
                       sx={{ mb: 3 }}
@@ -349,27 +373,27 @@ const BannersManagement = () => {
                     />
                   </Box>
                   <Box>
-                    <TextField 
-                      fullWidth 
+                    <TextField
+                      fullWidth
                       type="number"
-                      label="Tổng số sách lấy ra (Top X)" 
+                      label="Tổng số sách lấy ra (Top X)"
                       value={section.topX}
                       onChange={(e) => handleUpdateSection(section.id, 'topX', parseInt(e.target.value) || 0)}
                       sx={{ mb: 3 }}
                     />
                     <Box sx={{ display: 'flex', gap: 2 }}>
-                      <TextField 
-                        fullWidth 
+                      <TextField
+                        fullWidth
                         type="number"
-                        label="Số cột" 
+                        label="Số cột"
                         value={section.columns}
                         onChange={(e) => handleUpdateSection(section.id, 'columns', parseInt(e.target.value) || 1)}
                       />
                       {section.disablePagination && (
-                        <TextField 
-                          fullWidth 
+                        <TextField
+                          fullWidth
                           type="number"
-                          label="Số hàng" 
+                          label="Số hàng"
                           value={section.rows || 1}
                           onChange={(e) => handleUpdateSection(section.id, 'rows', parseInt(e.target.value) || 1)}
                         />
@@ -379,10 +403,37 @@ const BannersManagement = () => {
                 </Box>
               </Box>
             ))}
-            
+
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
               <Button variant="contained" color="primary" size="large" onClick={handleSaveSections}>
                 Lưu toàn bộ chuyên mục lên Trang chủ
+              </Button>
+            </Box>
+          </Paper>
+        </Box>
+
+        <Divider sx={{ my: 6 }} />
+
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+              Cấu hình phân trang Trang chủ
+            </Typography>
+          </Box>
+          <Paper sx={{ p: 4, bgcolor: '#fdfdfd' }}>
+            <TextField
+              type="number"
+              label="Số thể loại hiển thị trên hàng trang chủ"
+              value={paginationConfig.homeGenresPerPage}
+              onChange={(e) => setPaginationConfig((prev) => ({ ...prev, homeGenresPerPage: e.target.value }))}
+              inputProps={{ min: 1 }}
+              helperText="Áp dụng cho hàng thể loại ở trang chủ"
+              fullWidth
+            />
+
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+              <Button variant="contained" color="primary" size="large" onClick={handleSavePaginationConfig}>
+                Lưu cấu hình trang chủ
               </Button>
             </Box>
           </Paper>

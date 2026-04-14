@@ -10,7 +10,7 @@ import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlin
 import LogoutIcon from '@mui/icons-material/Logout'
 import authService from '../../apis/authService'
 
-const navItems = ['Trang chủ', 'Sách', 'Khuyến mãi', 'Liên hệ']
+const navItems = ['Trang chủ', 'Sách']
 
 const Header = () => {
   const [anchorEl, setAnchorEl] = useState(null)
@@ -215,7 +215,7 @@ const Header = () => {
                   navigate('/')
                 }
               }}
-              sx={{ cursor: 'pointer', fontWeight: 500, '&:hover': { color: 'primary.main' } }}
+              sx={{ cursor: 'pointer', fontWeight: 700, '&:hover': { color: 'primary.main' } }}
             >
               {item}
             </Typography>
