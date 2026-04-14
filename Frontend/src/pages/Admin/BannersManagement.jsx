@@ -316,7 +316,7 @@ const BannersManagement = () => {
                 >
                   <DeleteIcon />
                 </IconButton>
-                <Typography variant="h6" sx={{ mb: 0.5, mt: 1, fontWeight: 'bold', color: '#555', textAlign: 'center' }}>Chuyên mục {index + 1}</Typography>
+                <Typography variant="h6" sx={{ mb: 2, mt: 0, fontWeight: 'bold', color: '#555', textAlign: 'center' }}>Chuyên mục {index + 1}</Typography>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
                   <Box>
                     <FormControl fullWidth sx={{ mb: 3 }}>
