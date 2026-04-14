@@ -9,21 +9,126 @@ import BannerCarousel from '../../components/Banner/BannerCarousel'
 import bookService from '../../apis/bookService'
 import genreService from '../../apis/genreService'
 
+const BookSection = ({ section }) => {
+  const [bookPage, setBookPage] = useState(1)
+  const [booksState, setBooksState] = useState([])
+  
+  useEffect(() => {
+    const fetchSectionData = async () => {
+      let resData = []
+      try {
+        const source = section.dataSource || 'bestseller'
+        if (source === 'bestseller') {
+          resData = await bookService.getBestSellerBooks(section.topX || 10)
+        } else if (source === 'newest') {
+          // Lấy sách sắp xếp mới nhất
+          const res = await bookService.getBooks({ size: section.topX || 10, sortBy: 'id,desc' })
+          resData = res.content || res || []
+        } else if (source === 'promotion') {
+          // Tạm thời lấy sách featured cho phần Khuyến mại (sau này có API getSaleBooks thì thay)
+          resData = await bookService.getFeaturedBooks()
+        }
+      } catch(e) {
+        console.error(e)
+      }
+      setBooksState(Array.isArray(resData) ? resData : [])
+    }
+    fetchSectionData()
+  }, [section.dataSource, section.topX])
+
+  const cols = section.columns || 5
+  const rows = section.rows || 2
+  
+  // If sliding (pagination enabled), we show 1 row per page (cols items)
+  // If static grid (pagination disabled), we show a static block of (cols * rows) items
+  const booksPerPage = section.disablePagination ? (cols * rows) : cols
+  
+  const maxBooks = section.disablePagination ? (cols * rows) : (section.topX || 10)
+  const displayBooks = booksState.slice(0, maxBooks)
+  const totalBookPages = Math.ceil(displayBooks.length / booksPerPage)
+  const visibleBooks = displayBooks.slice((bookPage - 1) * booksPerPage, bookPage * booksPerPage)
+
+  return (
+    <Container maxWidth="xl" sx={{ my: 8 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '2px solid #3e5d58', pb: 1 }}>
+        <Typography variant="h4" color="primary.main">
+          {section.title}
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+        {!section.disablePagination && (
+          <IconButton
+            onClick={() => setBookPage((prev) => (prev === 1 ? totalBookPages : prev - 1))}
+            disabled={totalBookPages <= 1}
+            size="large"
+            sx={{ mr: 2 }}
+          >
+            <ChevronLeftIcon />
+          </IconButton>
+        )}
+
+        <Grid
+          container
+          spacing={6}
+          justifyContent={section.disablePagination ? 'flex-start' : 'center'}
+          key={bookPage}
+          sx={{
+            flexGrow: 1,
+            animation: 'fadeInSlide 0.5s ease-out',
+            '@keyframes fadeInSlide': {
+              '0%': { opacity: 0, transform: 'translateX(15px)' },
+              '100%': { opacity: 1, transform: 'translateX(0)' }
+            }
+          }}
+        >
+          {(section.disablePagination ? displayBooks : visibleBooks).map((book, index) => {
+            const rank = section.disablePagination ? index + 1 : (bookPage - 1) * booksPerPage + index + 1;
+            return (
+              <Grid item key={book.id} sx={{ width: { xs: '100%', sm: '50%', md: `${100 / (section.columns || 5)}%` }, display: 'flex', justifyContent: 'center' }}>
+                <BookCard
+                  id={book.id}
+                  title={book.title}
+                  author={book.author}
+                  price={book.price}
+                  coverUrl={book.coverUrl}
+                  rank={rank}
+                />
+              </Grid>
+            )
+          })}
+        </Grid>
+
+        {!section.disablePagination && (
+          <IconButton
+            onClick={() => setBookPage((prev) => (prev === totalBookPages ? 1 : prev + 1))}
+            disabled={totalBookPages <= 1}
+            size="large"
+            sx={{ ml: 2 }}
+          >
+            <ChevronRightIcon />
+          </IconButton>
+        )}
+      </Box>
+    </Container>
+  )
+}
+
 const HomePage = () => {
   const navigate = useNavigate()
-  const [books, setBooks] = useState([])
   const [genres, setGenres] = useState([])
   const [genrePage, setGenrePage] = useState(0)
-  const [bookPage, setBookPage] = useState(1)
+  const defaultHomeSections = [{ id: 1, title: 'Sách bán chạy', disablePagination: true, topX: 10, columns: 5, rows: 2, dataSource: 'bestseller' }]
 
-  const [homeConfig, setHomeConfig] = useState(() => {
-    const saved = localStorage.getItem('homePageConfig')
+  // HomePage sections config
+  const [homeSections] = useState(() => {
+    const saved = localStorage.getItem('homeSectionsConfig')
     if (saved) {
-      try { return JSON.parse(saved) } catch (e) {}
+      try { return JSON.parse(saved) } catch { return defaultHomeSections }
     }
-    return { disablePagination: false, topX: 10, columns: 5, rows: 2 }
+    return defaultHomeSections
   })
 
+  // Only genres for top row nav
   const genresPerPage = 10
   const totalGenrePages = Math.ceil((genres?.length || 0) / genresPerPage)
   const visibleGenres = genres.slice(genrePage * genresPerPage, (genrePage + 1) * genresPerPage)
@@ -40,29 +145,10 @@ const HomePage = () => {
   }
 
   useEffect(() => {
-    const fetchData = async () => {
-      const [bestSellerBooksRes, featuredBooksRes, genresRes] = await Promise.allSettled([
-        bookService.getBestSellerBooks(10),
-        bookService.getFeaturedBooks(),
-        genreService.getGenres()
-      ])
-
-      const booksSource = bestSellerBooksRes.status === 'fulfilled'
-        ? bestSellerBooksRes.value
-        : (featuredBooksRes.status === 'fulfilled' ? featuredBooksRes.value : [])
-
-      setBooks(
-        (booksSource || []).slice(0, homeConfig.topX)
-      )
-      setGenres(genresRes.status === 'fulfilled' ? (genresRes.value || []) : [])
-    }
-
-    fetchData()
+    genreService.getGenres().then(res => setGenres(Array.isArray(res) ? res : [])).catch(() => {})
   }, [])
 
-  const booksPerPage = homeConfig.columns || 5
-  const totalBookPages = Math.ceil(books.length / booksPerPage)
-  const visibleBooks = books.slice((bookPage - 1) * booksPerPage, bookPage * booksPerPage)
+  // removed duplicate old pagination code
 
   return (
     <Box>
@@ -126,71 +212,10 @@ const HomePage = () => {
         <SaveCouponSection />
       </Container>
 
-      {/* Bestsellers Section */}
-      <Container maxWidth="xl" sx={{ my: 8 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4, borderBottom: '2px solid #3e5d58', pb: 1 }}>
-          <Typography variant="h4" color="primary.main">
-            Sách bán chạy
-          </Typography>
-          <Typography variant="body2" sx={{ cursor: 'pointer', color: 'primary.main', fontWeight: 'bold', '&:hover': { textDecoration: 'underline' } }}>
-            Xem tất cả &gt;
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          {!homeConfig.disablePagination && (
-            <IconButton
-              onClick={() => setBookPage((prev) => (prev === 1 ? totalBookPages : prev - 1))}
-              disabled={totalBookPages <= 1}
-              size="large"
-              sx={{ mr: 2 }}
-            >
-              <ChevronLeftIcon />
-            </IconButton>
-          )}
-
-          <Grid
-            container
-            spacing={6}
-            justifyContent={homeConfig.disablePagination ? "flex-start" : "center"}
-            key={bookPage}
-            sx={{
-              flexGrow: 1,
-              animation: 'fadeInSlide 0.5s ease-out',
-              '@keyframes fadeInSlide': {
-                '0%': { opacity: 0, transform: 'translateX(15px)' },
-                '100%': { opacity: 1, transform: 'translateX(0)' }
-              }
-            }}
-          >
-            {(homeConfig.disablePagination ? books : visibleBooks).map((book, index) => {
-              const rank = homeConfig.disablePagination ? index + 1 : (bookPage - 1) * booksPerPage + index + 1;
-              return (
-                <Grid item key={book.id} sx={{ width: { xs: '100%', sm: '50%', md: `${100 / (homeConfig.columns || 5)}%` }, display: 'flex', justifyContent: 'center' }}>
-                  <BookCard
-                    id={book.id}
-                    title={book.title}
-                    author={book.author}
-                    price={book.price}
-                    coverUrl={book.coverUrl}
-                    rank={rank}
-                  />
-                </Grid>
-              )
-            })}
-          </Grid>
-
-          {!homeConfig.disablePagination && (
-            <IconButton
-              onClick={() => setBookPage((prev) => (prev === totalBookPages ? 1 : prev + 1))}
-              disabled={totalBookPages <= 1}
-              size="large"
-              sx={{ ml: 2 }}
-            >
-              <ChevronRightIcon />
-            </IconButton>
-          )}
-        </Box>
-      </Container>
+      {/* Dynamic Sections mapped from Admin Builder */}
+      {homeSections.map((section) => (
+        <BookSection key={section.id} section={section} />
+      ))}
     </Box>
   )
 }

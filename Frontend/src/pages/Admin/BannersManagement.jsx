@@ -21,28 +21,48 @@ const BannersManagement = () => {
   const [previewUrl, setPreviewUrl] = useState('')
   const [displayOrder, setDisplayOrder] = useState('')
 
-  // Settings state
-  const [homeConfig, setHomeConfig] = useState({
-    disablePagination: true,
-    topX: 10,
-    columns: 5,
-    rows: 2
-  })
+  // Sections Config State
+  const [homeSections, setHomeSections] = useState([
+    { id: 1, title: 'Sách bán chạy', disablePagination: true, topX: 10, columns: 5, rows: 2, dataSource: 'bestseller' }
+  ])
 
   useEffect(() => {
-    const savedConfig = localStorage.getItem('homePageConfig')
-    if (savedConfig) {
+    const savedSections = localStorage.getItem('homeSectionsConfig')
+    if (savedSections) {
       try {
-        setHomeConfig(JSON.parse(savedConfig))
+        setHomeSections(JSON.parse(savedSections))
       } catch (e) {
         console.error(e)
       }
     }
   }, [])
 
-  const handleSaveConfig = () => {
-    localStorage.setItem('homePageConfig', JSON.stringify(homeConfig))
-    alert('Đã lưu cấu hình giao diện!')
+  const handleSaveSections = () => {
+    localStorage.setItem('homeSectionsConfig', JSON.stringify(homeSections))
+    alert('Đã lưu cấu hình các chuyên mục trang chủ!')
+  }
+
+  const handleAddSection = () => {
+    const newId = homeSections.length > 0 ? Math.max(...homeSections.map(s => s.id)) + 1 : 1
+    const newSection = { id: newId, title: 'Chuyên mục mới', disablePagination: false, topX: 20, columns: 5, rows: 2, dataSource: 'featured' }
+    setHomeSections([...homeSections, newSection])
+  }
+
+  const handleRemoveSection = (id) => {
+    setHomeSections(homeSections.filter(s => s.id !== id))
+  }
+
+  const handleUpdateSection = (id, field, value) => {
+    setHomeSections(homeSections.map(s => s.id === id ? { ...s, [field]: value } : s))
+  }
+
+  const handleMoveSection = (index, direction) => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= homeSections.length) return
+
+    const nextSections = [...homeSections]
+    ;[nextSections[index], nextSections[targetIndex]] = [nextSections[targetIndex], nextSections[index]]
+    setHomeSections(nextSections)
   }
 
   useEffect(() => {
@@ -258,53 +278,112 @@ const BannersManagement = () => {
         <Divider sx={{ my: 6 }} />
 
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 3 }}>
-            Cấu hình danh sách Sách Bán Chạy (Trang chủ)
-          </Typography>
-          <Paper sx={{ p: 4 }}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2 }}>Kiểu hiển thị</Typography>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={homeConfig.disablePagination}
-                      onChange={(e) => setHomeConfig({ ...homeConfig, disablePagination: e.target.checked })}
-                    />
-                  }
-                  label="Tắt phân trang (Hiển thị dạng lưới tĩnh)"
-                />
-              </Box>
-              <Box>
-                <Typography variant="h6" sx={{ mb: 2 }}>Tham số hiển thị</Typography>
-                <TextField 
-                  fullWidth 
-                  type="number"
-                  label="Hiển thị Top X (VD: 10, 20)" 
-                  value={homeConfig.topX}
-                  onChange={(e) => setHomeConfig({ ...homeConfig, topX: parseInt(e.target.value) || 0 })}
-                  sx={{ mb: 3 }}
-                />
-                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                  <TextField 
-                    fullWidth 
-                    type="number"
-                    label="Số cột" 
-                    value={homeConfig.columns}
-                    onChange={(e) => setHomeConfig({ ...homeConfig, columns: parseInt(e.target.value) || 1 })}
-                  />
-                  <TextField 
-                    fullWidth 
-                    type="number"
-                    label="Số hàng" 
-                    value={homeConfig.rows}
-                    onChange={(e) => setHomeConfig({ ...homeConfig, rows: parseInt(e.target.value) || 1 })}
-                  />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+              Quản lý các Chuyên Mục Trang Chủ (Sections)
+            </Typography>
+            <Button variant="contained" color="secondary" startIcon={<AddIcon />} onClick={handleAddSection}>
+              Thêm chuyên mục
+            </Button>
+          </Box>
+          <Paper sx={{ p: 4, bgcolor: '#fdfdfd' }}>
+            {homeSections.map((section, index) => (
+              <Box key={section.id} sx={{ mb: 4, p: 3, border: '1px solid #eee', borderRadius: 2, bgcolor: 'white', position: 'relative' }}>
+                <Box sx={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 0.5 }}>
+                  <IconButton
+                    color="primary"
+                    size="small"
+                    title="Đưa chuyên mục lên trên"
+                    disabled={index === 0}
+                    onClick={() => handleMoveSection(index, 'up')}
+                  >
+                    <KeyboardArrowUpIcon />
+                  </IconButton>
+                  <IconButton
+                    color="primary"
+                    size="small"
+                    title="Đưa chuyên mục xuống dưới"
+                    disabled={index === homeSections.length - 1}
+                    onClick={() => handleMoveSection(index, 'down')}
+                  >
+                    <KeyboardArrowDownIcon />
+                  </IconButton>
                 </Box>
-                <Button variant="contained" color="primary" onClick={handleSaveConfig}>
-                  Lưu cấu hình
-                </Button>
+                <IconButton 
+                  color="error" 
+                  sx={{ position: 'absolute', top: 8, right: 8 }}
+                  onClick={() => handleRemoveSection(section.id)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+                <Typography variant="h6" sx={{ mb: 0.5, mt: 1, fontWeight: 'bold', color: '#555', textAlign: 'center' }}>Chuyên mục {index + 1}</Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
+                  <Box>
+                    <FormControl fullWidth sx={{ mb: 3 }}>
+                      <InputLabel>Nguồn dữ liệu</InputLabel>
+                      <Select
+                        value={section.dataSource || 'bestseller'}
+                        label="Nguồn dữ liệu"
+                        onChange={(e) => handleUpdateSection(section.id, 'dataSource', e.target.value)}
+                      >
+                        <MenuItem value="bestseller">Sách bán chạy nhất</MenuItem>
+                        <MenuItem value="newest">Sách mới nhất</MenuItem>
+                        <MenuItem value="promotion">Sách khuyến mại</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <TextField 
+                      fullWidth 
+                      label="Tiêu đề hiển thị" 
+                      value={section.title}
+                      onChange={(e) => handleUpdateSection(section.id, 'title', e.target.value)}
+                      sx={{ mb: 3 }}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={section.disablePagination}
+                          onChange={(e) => handleUpdateSection(section.id, 'disablePagination', e.target.checked)}
+                        />
+                      }
+                      label="Tắt phân trang trượt (Hiển thị dạng lưới tĩnh)"
+                    />
+                  </Box>
+                  <Box>
+                    <TextField 
+                      fullWidth 
+                      type="number"
+                      label="Tổng số sách lấy ra (Top X)" 
+                      value={section.topX}
+                      onChange={(e) => handleUpdateSection(section.id, 'topX', parseInt(e.target.value) || 0)}
+                      sx={{ mb: 3 }}
+                    />
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <TextField 
+                        fullWidth 
+                        type="number"
+                        label="Số cột" 
+                        value={section.columns}
+                        onChange={(e) => handleUpdateSection(section.id, 'columns', parseInt(e.target.value) || 1)}
+                      />
+                      {section.disablePagination && (
+                        <TextField 
+                          fullWidth 
+                          type="number"
+                          label="Số hàng" 
+                          value={section.rows || 1}
+                          onChange={(e) => handleUpdateSection(section.id, 'rows', parseInt(e.target.value) || 1)}
+                        />
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
               </Box>
+            ))}
+            
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+              <Button variant="contained" color="primary" size="large" onClick={handleSaveSections}>
+                Lưu toàn bộ chuyên mục lên Trang chủ
+              </Button>
             </Box>
           </Paper>
         </Box>
