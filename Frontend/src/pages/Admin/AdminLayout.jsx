@@ -8,6 +8,7 @@ import PeopleIcon from '@mui/icons-material/People'
 import LocalOfferIcon from '@mui/icons-material/LocalOffer'
 import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
+import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize'
 import authService from '../../apis/authService'
 
 const drawerWidth = 260
@@ -39,7 +40,7 @@ const AdminLayout = () => {
     { text: 'Quản lý đơn hàng', icon: <ShoppingCartIcon />, path: '/admin/orders' },
     { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users' },
     { text: 'Mã giảm giá', icon: <LocalOfferIcon />, path: '/admin/discount-codes' },
-    { text: 'Quản lý Banner', icon: <MenuBookIcon />, path: '/admin/banners' }
+    { text: 'Quản lý giao diện', icon: <DashboardCustomizeIcon />, path: '/admin/banners' }
   ]
 
   const handleDrawerToggle = () => {

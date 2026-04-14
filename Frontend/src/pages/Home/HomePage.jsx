@@ -16,6 +16,14 @@ const HomePage = () => {
   const [genrePage, setGenrePage] = useState(0)
   const [bookPage, setBookPage] = useState(1)
 
+  const [homeConfig, setHomeConfig] = useState(() => {
+    const saved = localStorage.getItem('homePageConfig')
+    if (saved) {
+      try { return JSON.parse(saved) } catch (e) {}
+    }
+    return { disablePagination: false, topX: 10, columns: 5, rows: 2 }
+  })
+
   const genresPerPage = 10
   const totalGenrePages = Math.ceil((genres?.length || 0) / genresPerPage)
   const visibleGenres = genres.slice(genrePage * genresPerPage, (genrePage + 1) * genresPerPage)
@@ -44,7 +52,7 @@ const HomePage = () => {
         : (featuredBooksRes.status === 'fulfilled' ? featuredBooksRes.value : [])
 
       setBooks(
-        (booksSource || []).slice(0, 10)
+        (booksSource || []).slice(0, homeConfig.topX)
       )
       setGenres(genresRes.status === 'fulfilled' ? (genresRes.value || []) : [])
     }
@@ -52,7 +60,7 @@ const HomePage = () => {
     fetchData()
   }, [])
 
-  const booksPerPage = 5
+  const booksPerPage = homeConfig.columns || 5
   const totalBookPages = Math.ceil(books.length / booksPerPage)
   const visibleBooks = books.slice((bookPage - 1) * booksPerPage, bookPage * booksPerPage)
 
@@ -129,19 +137,21 @@ const HomePage = () => {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          <IconButton
-            onClick={() => setBookPage((prev) => (prev === 1 ? totalBookPages : prev - 1))}
-            disabled={totalBookPages <= 1}
-            size="large"
-            sx={{ mr: 2 }}
-          >
-            <ChevronLeftIcon />
-          </IconButton>
+          {!homeConfig.disablePagination && (
+            <IconButton
+              onClick={() => setBookPage((prev) => (prev === 1 ? totalBookPages : prev - 1))}
+              disabled={totalBookPages <= 1}
+              size="large"
+              sx={{ mr: 2 }}
+            >
+              <ChevronLeftIcon />
+            </IconButton>
+          )}
 
           <Grid
             container
             spacing={6}
-            justifyContent="center"
+            justifyContent={homeConfig.disablePagination ? "flex-start" : "center"}
             key={bookPage}
             sx={{
               flexGrow: 1,
@@ -152,10 +162,10 @@ const HomePage = () => {
               }
             }}
           >
-            {visibleBooks.map((book, index) => {
-              const rank = (bookPage - 1) * booksPerPage + index + 1;
+            {(homeConfig.disablePagination ? books : visibleBooks).map((book, index) => {
+              const rank = homeConfig.disablePagination ? index + 1 : (bookPage - 1) * booksPerPage + index + 1;
               return (
-                <Grid item key={book.id}>
+                <Grid item key={book.id} sx={{ width: { xs: '100%', sm: '50%', md: `${100 / (homeConfig.columns || 5)}%` }, display: 'flex', justifyContent: 'center' }}>
                   <BookCard
                     id={book.id}
                     title={book.title}
@@ -169,14 +179,16 @@ const HomePage = () => {
             })}
           </Grid>
 
-          <IconButton
-            onClick={() => setBookPage((prev) => (prev === totalBookPages ? 1 : prev + 1))}
-            disabled={totalBookPages <= 1}
-            size="large"
-            sx={{ ml: 2 }}
-          >
-            <ChevronRightIcon />
-          </IconButton>
+          {!homeConfig.disablePagination && (
+            <IconButton
+              onClick={() => setBookPage((prev) => (prev === totalBookPages ? 1 : prev + 1))}
+              disabled={totalBookPages <= 1}
+              size="large"
+              sx={{ ml: 2 }}
+            >
+              <ChevronRightIcon />
+            </IconButton>
+          )}
         </Box>
       </Container>
     </Box>
