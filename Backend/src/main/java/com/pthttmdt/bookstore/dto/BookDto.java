@@ -22,6 +22,8 @@ public class BookDto {
         private List<String> genres;
         private String description;
         private String coverUrl;
+        private String sampleUrl;
+        private List<String> samplePageUrls;
         private String isbn;
         private Integer pages;
         private String publisher;
@@ -41,6 +43,8 @@ public class BookDto {
         private List<String> genres;
         private String description;
         private String coverUrl;
+        private String sampleUrl;
+        private List<String> samplePageUrls;
         private String isbn;
         private Integer pages;
         private String publisher;
@@ -68,6 +72,8 @@ public class BookDto {
                 res.genres = genreNames;
             res.description = book.getDescription();
             res.coverUrl = book.getCoverUrl();
+            res.sampleUrl = book.getSampleUrl();
+            res.samplePageUrls = book.getSamplePageUrls();
             res.isbn = book.getIsbn();
             res.pages = book.getPages();
             res.publisher = book.getPublisher();

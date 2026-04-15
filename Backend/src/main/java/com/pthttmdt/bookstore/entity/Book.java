@@ -3,7 +3,9 @@ package com.pthttmdt.bookstore.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -37,6 +39,15 @@ public class Book {
 
     @Column(columnDefinition = "LONGTEXT")
     private String coverUrl;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String sampleUrl;
+
+    @ElementCollection
+    @CollectionTable(name = "book_sample_pages", joinColumns = @JoinColumn(name = "book_id"))
+    @Column(name = "image_url", columnDefinition = "LONGTEXT")
+    @OrderColumn(name = "page_order")
+    private List<String> samplePageUrls = new ArrayList<>();
 
     private String isbn;
 

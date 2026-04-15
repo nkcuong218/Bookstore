@@ -1,5 +1,6 @@
 import {
-  Box, Container, Typography, Grid, Button, Divider, Rating, Chip, Paper, Breadcrumbs, Link, Avatar
+  Box, Container, Typography, Grid, Button, Divider, Rating, Chip, Paper, Breadcrumbs, Link, Avatar,
+  Dialog, DialogTitle, DialogContent, IconButton
 } from '@mui/material'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -8,6 +9,10 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import AutoStoriesIcon from '@mui/icons-material/AutoStories'
+import CloseIcon from '@mui/icons-material/Close'
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore'
+import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import BookCard from '../../../components/BookCard/BookCard'
 import { formatPrice } from '../../../utils/formatPrice'
 import bookService from '../../../apis/bookService'
@@ -24,6 +29,8 @@ const BookDetail = () => {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [isSampleOpen, setIsSampleOpen] = useState(false)
+  const [sampleIndex, setSampleIndex] = useState(0)
 
   useEffect(() => {
     const fetchBookData = async () => {
@@ -161,6 +168,8 @@ const BookDetail = () => {
       </Container>
     )
   }
+
+  const samplePages = Array.isArray(book.samplePageUrls) ? book.samplePageUrls : []
 
   const handleQuantityChange = (action) => {
     if (action === 'increase' && quantity < book.stock) {
@@ -334,6 +343,21 @@ const BookDetail = () => {
                 </Button>
               </Box>
 
+              {(samplePages.length > 0 || book.sampleUrl) && (
+                <Box sx={{ display: 'flex', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<AutoStoriesIcon />}
+                    onClick={() => {
+                      setSampleIndex(0)
+                      setIsSampleOpen(true)
+                    }}
+                  >
+                    Đọc thử
+                  </Button>
+                </Box>
+              )}
+
               {/* Shipping Info */}
               <Box sx={{
                 bgcolor: '#f5f5f5',
@@ -462,6 +486,95 @@ const BookDetail = () => {
             </Paper>
           )}
         </Box>
+
+        <Dialog
+          open={isSampleOpen}
+          onClose={() => setIsSampleOpen(false)}
+          fullWidth
+          maxWidth="lg"
+        >
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Đọc thử: {book.title}
+            <IconButton onClick={() => setIsSampleOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 0, height: '80vh' }}>
+            {samplePages.length > 0 ? (
+              <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#111' }}>
+                <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#1b1b1b' }}>
+                  <Typography variant="body2" sx={{ color: '#fff' }}>
+                    Trang {sampleIndex + 1} / {samplePages.length}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <IconButton
+                      onClick={() => setSampleIndex((prev) => Math.max(prev - 1, 0))}
+                      disabled={sampleIndex === 0}
+                      sx={{ color: '#fff' }}
+                    >
+                      <NavigateBeforeIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => setSampleIndex((prev) => Math.min(prev + 1, samplePages.length - 1))}
+                      disabled={sampleIndex >= samplePages.length - 1}
+                      sx={{ color: '#fff' }}
+                    >
+                      <NavigateNextIcon />
+                    </IconButton>
+                  </Box>
+                </Box>
+
+                <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
+                  <Box
+                    component="img"
+                    src={samplePages[sampleIndex]}
+                    alt={`Sample page ${sampleIndex + 1}`}
+                    sx={{
+                      maxHeight: '100%',
+                      maxWidth: '100%',
+                      objectFit: 'contain',
+                      borderRadius: 1,
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.45)'
+                    }}
+                  />
+                </Box>
+
+                {samplePages.length > 1 && (
+                  <Box sx={{ p: 1.5, bgcolor: '#1b1b1b', display: 'flex', gap: 1, overflowX: 'auto' }}>
+                    {samplePages.map((pageUrl, index) => (
+                      <Box
+                        key={`sample-thumb-${index}`}
+                        component="img"
+                        src={pageUrl}
+                        alt={`Thumbnail ${index + 1}`}
+                        onClick={() => setSampleIndex(index)}
+                        sx={{
+                          width: 56,
+                          height: 78,
+                          objectFit: 'cover',
+                          borderRadius: 0.5,
+                          cursor: 'pointer',
+                          opacity: sampleIndex === index ? 1 : 0.6,
+                          border: sampleIndex === index ? '2px solid #42a5f5' : '1px solid #666'
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            ) : book.sampleUrl ? (
+              <iframe
+                src={book.sampleUrl}
+                title={`sample-${book.id}`}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            ) : (
+              <Box sx={{ p: 3 }}>
+                <Typography color="text.secondary">Sách này chưa có file đọc thử.</Typography>
+              </Box>
+            )}
+          </DialogContent>
+        </Dialog>
       </Container>
     </Box>
   )

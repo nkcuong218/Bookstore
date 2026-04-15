@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.text.Normalizer;
@@ -89,6 +90,8 @@ public class BookService {
                 .genres(genres)
                 .description(req.getDescription())
                 .coverUrl(saveBase64Image(req.getCoverUrl()))
+                .sampleUrl(saveBase64Sample(req.getSampleUrl()))
+                .samplePageUrls(saveSamplePages(req.getSamplePageUrls()))
                 .isbn(req.getIsbn())
                 .pages(req.getPages())
                 .publisher(req.getPublisher())
@@ -117,6 +120,10 @@ public class BookService {
         }
         book.setDescription(req.getDescription());
         book.setCoverUrl(saveBase64Image(req.getCoverUrl()));
+        book.setSampleUrl(saveBase64Sample(req.getSampleUrl()));
+        if (req.getSamplePageUrls() != null) {
+            book.setSamplePageUrls(saveSamplePages(req.getSamplePageUrls()));
+        }
         book.setIsbn(req.getIsbn());
         book.setPages(req.getPages());
         book.setPublisher(req.getPublisher());
@@ -166,6 +173,101 @@ public class BookService {
         } catch (Exception e) {
             e.printStackTrace();
             return coverUrl;
+        }
+    }
+
+    private String saveBase64Sample(String sampleUrl) {
+        if (sampleUrl == null || sampleUrl.isBlank()) {
+            return sampleUrl;
+        }
+
+        String trimmed = sampleUrl.trim();
+        if (!trimmed.startsWith("data:application/pdf;base64,")) {
+            return trimmed;
+        }
+
+        try {
+            String[] parts = trimmed.split(",", 2);
+            if (parts.length < 2) {
+                return trimmed;
+            }
+
+            byte[] pdfBytes = Base64.getDecoder().decode(parts[1]);
+
+            Path uploadDir = Paths.get("uploads/samples");
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            String fileName = UUID.randomUUID() + ".pdf";
+            Path filePath = uploadDir.resolve(fileName);
+
+            Files.write(filePath, pdfBytes);
+
+            return "http://localhost:8080/uploads/samples/" + fileName;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return trimmed;
+        }
+    }
+
+    private java.util.List<String> saveSamplePages(java.util.List<String> samplePageUrls) {
+        if (samplePageUrls == null) {
+            return null;
+        }
+
+        java.util.List<String> processed = new ArrayList<>();
+        for (String pageUrl : samplePageUrls) {
+            if (pageUrl == null || pageUrl.isBlank()) {
+                continue;
+            }
+
+            String saved = saveBase64SampleImage(pageUrl);
+            if (saved != null && !saved.isBlank()) {
+                processed.add(saved);
+            }
+        }
+
+        return processed;
+    }
+
+    private String saveBase64SampleImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return imageUrl;
+        }
+
+        String trimmed = imageUrl.trim();
+        if (!trimmed.startsWith("data:image")) {
+            return trimmed;
+        }
+
+        try {
+            String[] parts = trimmed.split(",", 2);
+            if (parts.length < 2) {
+                return trimmed;
+            }
+
+            String header = parts[0].toLowerCase(Locale.ROOT);
+            String extension = "jpg";
+            if (header.contains("image/png")) extension = "png";
+            else if (header.contains("image/webp")) extension = "webp";
+            else if (header.contains("image/jpeg") || header.contains("image/jpg")) extension = "jpg";
+
+            byte[] imageBytes = Base64.getDecoder().decode(parts[1]);
+
+            Path uploadDir = Paths.get("uploads/samples/pages");
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            String fileName = UUID.randomUUID() + "." + extension;
+            Path filePath = uploadDir.resolve(fileName);
+            Files.write(filePath, imageBytes);
+
+            return "http://localhost:8080/uploads/samples/pages/" + fileName;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return trimmed;
         }
     }
 

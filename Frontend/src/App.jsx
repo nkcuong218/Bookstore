@@ -36,6 +36,7 @@ import ReviewsManagement from './pages/Admin/ReviewsManagement'
 import DiscountCodesManagement from './pages/Admin/DiscountCodesManagement'
 import InterfaceManagement from './pages/Admin/InterfaceManagement'
 import authService from './apis/authService'
+// import ChatBox from './components/ChatBot/ChatBox'
 
 // Protected Route Component
 const ProtectedAdminRoute = ({ children }) => {
@@ -247,6 +248,7 @@ function App() {
           } />
         </Route>
       </Routes>
+      {/* <ChatBox /> */}
     </Router>
   )
 }
