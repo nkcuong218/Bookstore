@@ -156,6 +156,49 @@ public class AuthService {
         return new AuthDto.AuthResponse(token, user);
     }
 
+    @Transactional
+    public AuthDto.SimpleResponse forgotPassword(AuthDto.ForgotPasswordRequest req) {
+        if (req == null || req.getEmail() == null || req.getEmail().isBlank()) {
+            throw new RuntimeException("Email không hợp lệ!");
+        }
+
+        String normalizedEmail = req.getEmail().trim().toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
+
+        // Không tiết lộ email có tồn tại hay không để tránh lộ dữ liệu tài khoản.
+        if (user == null || user.getStatus() == User.Status.BLOCKED) {
+            return new AuthDto.SimpleResponse("Nếu email tồn tại trong hệ thống, mình đã gửi hướng dẫn đặt lại mật khẩu.");
+        }
+
+        user.setPasswordResetToken(UUID.randomUUID().toString());
+        user.setPasswordResetExpiresAt(LocalDateTime.now().plusMinutes(30));
+        userRepository.save(user);
+        sendResetPasswordEmail(user);
+
+        return new AuthDto.SimpleResponse("Nếu email tồn tại trong hệ thống, mình đã gửi hướng dẫn đặt lại mật khẩu.");
+    }
+
+    @Transactional
+    public AuthDto.SimpleResponse resetPassword(AuthDto.ResetPasswordRequest req) {
+        if (req == null || req.getToken() == null || req.getToken().isBlank()) {
+            throw new RuntimeException("Token đặt lại mật khẩu không hợp lệ!");
+        }
+
+        User user = userRepository.findByPasswordResetToken(req.getToken().trim())
+                .orElseThrow(() -> new RuntimeException("Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn!"));
+
+        if (user.getPasswordResetExpiresAt() == null || user.getPasswordResetExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Link đặt lại mật khẩu đã hết hạn!");
+        }
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        user.setPasswordResetToken(null);
+        user.setPasswordResetExpiresAt(null);
+        userRepository.save(user);
+
+        return new AuthDto.SimpleResponse("Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.");
+    }
+
     private void sendVerificationEmail(User user) {
         if (user == null || user.getEmail() == null || user.getEmail().isBlank()) {
             throw new RuntimeException("Không thể gửi email xác thực!");
@@ -180,6 +223,30 @@ public class AuthService {
             mailSender.send(message);
         } catch (MailException e) {
             throw new RuntimeException("Không gửi được email xác thực. Vui lòng kiểm tra cấu hình SMTP!");
+        }
+    }
+
+    private void sendResetPasswordEmail(User user) {
+        if (user == null || user.getEmail() == null || user.getEmail().isBlank() || user.getPasswordResetToken() == null) {
+            throw new RuntimeException("Không thể gửi email đặt lại mật khẩu!");
+        }
+
+        String resetLink = frontendBaseUrl.replaceAll("/$", "") + "/reset-password?token=" + user.getPasswordResetToken();
+
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(user.getEmail());
+            message.setFrom((mailFrom == null || mailFrom.isBlank()) ? "no-reply@bookstore.local" : mailFrom);
+            message.setSubject("Đặt lại mật khẩu Bookstore");
+            message.setText("Xin chào " + user.getFullName() + ",\n\n"
+                    + "Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản Bookstore.\n"
+                    + "Vui lòng bấm vào link bên dưới để đặt mật khẩu mới:\n"
+                    + resetLink + "\n\n"
+                    + "Link có hiệu lực trong 30 phút.\n\n"
+                    + "Nếu bạn không yêu cầu thao tác này, hãy bỏ qua email này.");
+            mailSender.send(message);
+        } catch (MailException e) {
+            throw new RuntimeException("Không gửi được email đặt lại mật khẩu. Vui lòng kiểm tra cấu hình SMTP!");
         }
     }
 

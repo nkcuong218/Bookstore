@@ -46,6 +46,8 @@ public class ReviewDto {
         private Long userId;
         private String userName;
         private Long bookId;
+        private String bookTitle;
+        private String orderCode;
         private Integer rating;
         private String comment;
         private LocalDateTime createdAt;
@@ -56,6 +58,8 @@ public class ReviewDto {
             res.userId = review.getUser() != null ? review.getUser().getId() : null;
             res.userName = review.getUser() != null ? review.getUser().getFullName() : null;
             res.bookId = review.getBook() != null ? review.getBook().getId() : null;
+            res.bookTitle = review.getBook() != null ? review.getBook().getTitle() : null;
+            res.orderCode = review.getOrder() != null ? review.getOrder().getOrderCode() : null;
             res.rating = review.getRating();
             res.comment = review.getComment();
             res.createdAt = review.getCreatedAt();

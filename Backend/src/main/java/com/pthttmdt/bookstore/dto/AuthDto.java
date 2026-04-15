@@ -40,6 +40,23 @@ public class AuthDto {
     }
 
     @Data
+    public static class ForgotPasswordRequest {
+        @Email(message = "Email không hợp lệ")
+        @NotBlank(message = "Email không được trống")
+        private String email;
+    }
+
+    @Data
+    public static class ResetPasswordRequest {
+        @NotBlank(message = "Token không được trống")
+        private String token;
+
+        @NotBlank(message = "Mật khẩu mới không được trống")
+        @Size(min = 6, message = "Mật khẩu tối thiểu 6 ký tự")
+        private String newPassword;
+    }
+
+    @Data
     public static class RegisterResponse {
         private String message;
 

@@ -179,7 +179,7 @@ const MyOrders = () => {
             sx={{ mb: 3 }}
             onClose={() => setShowSuccessMessage(false)}
           >
-            🎉 Đặt hàng thành công! Đơn hàng <strong>#{newOrderId}</strong> đã được tạo.
+            Đặt hàng thành công! Đơn hàng của đã được tạo.
           </Alert>
         )}
 
@@ -261,131 +261,131 @@ const MyOrders = () => {
 
               return (
                 <Paper
-                key={order.id}
-                sx={{
-                  p: 3,
-                  border: (order.orderCode || order.id) === newOrderId ? '2px solid' : 'none',
-                  borderColor: (order.orderCode || order.id) === newOrderId ? 'success.main' : 'transparent',
-                  transition: 'all 0.3s ease',
-                  animation: (order.orderCode || order.id) === newOrderId ? 'pulse 1s ease-in-out 2' : 'none',
-                  '@keyframes pulse': {
-                    '0%, 100%': { boxShadow: '0 0 0 0 rgba(46, 125, 50, 0.4)' },
-                    '50%': { boxShadow: '0 0 20px 10px rgba(46, 125, 50, 0)' }
-                  }
-                }}
-              >
-                {/* Order Header */}
-                <Box sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 2,
-                  pb: 2,
-                  borderBottom: '1px solid #e0e0e0'
-                }}>
-                  <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Mã đơn hàng
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                        {order.orderCode}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Ngày đặt
-                      </Typography>
-                      <Typography variant="body1">
-                        {formatOrderDate(order.createdAt)}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        Thanh toán
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography variant="body1">
-                          {formatPaymentMethodLabel(order.paymentMethod)}
+                  key={order.id}
+                  sx={{
+                    p: 3,
+                    border: (order.orderCode || order.id) === newOrderId ? '2px solid' : 'none',
+                    borderColor: (order.orderCode || order.id) === newOrderId ? 'success.main' : 'transparent',
+                    transition: 'all 0.3s ease',
+                    animation: (order.orderCode || order.id) === newOrderId ? 'pulse 1s ease-in-out 2' : 'none',
+                    '@keyframes pulse': {
+                      '0%, 100%': { boxShadow: '0 0 0 0 rgba(46, 125, 50, 0.4)' },
+                      '50%': { boxShadow: '0 0 20px 10px rgba(46, 125, 50, 0)' }
+                    }
+                  }}
+                >
+                  {/* Order Header */}
+                  <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2,
+                    pb: 2,
+                    borderBottom: '1px solid #e0e0e0'
+                  }}>
+                    <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Mã đơn hàng
                         </Typography>
-                        {paymentMeta && (
-                          <Chip
-                            size="small"
-                            color={paymentMeta.color}
-                            label={paymentMeta.label}
-                          />
-                        )}
+                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                          {order.orderCode}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Ngày đặt
+                        </Typography>
+                        <Typography variant="body1">
+                          {formatOrderDate(order.createdAt)}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Thanh toán
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                          <Typography variant="body1">
+                            {formatPaymentMethodLabel(order.paymentMethod)}
+                          </Typography>
+                          {paymentMeta && (
+                            <Chip
+                              size="small"
+                              color={paymentMeta.color}
+                              label={paymentMeta.label}
+                            />
+                          )}
+                        </Box>
                       </Box>
                     </Box>
+                    <Chip
+                      label={order.statusLabel}
+                      color={getStatusColor(order.statusLabel)}
+                      size="medium"
+                    />
                   </Box>
-                  <Chip
-                    label={order.statusLabel}
-                    color={getStatusColor(order.statusLabel)}
-                    size="medium"
-                  />
-                </Box>
 
-                {/* Order Items */}
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  {(order.items || []).map((item) => (
-                    <Grid item xs={12} sm={6} md={3} key={item.id}>
-                      <Box sx={{ display: 'flex', gap: 1.5 }}>
-                        <Box
-                          sx={{
-                            width: 60,
-                            height: 80,
-                            bgcolor: '#f0f0f0',
-                            borderRadius: 1,
-                            overflow: 'hidden',
-                            flexShrink: 0
-                          }}
-                        >
-                          <img
-                            src={item.bookCoverUrl}
-                            alt={item.bookTitle}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
+                  {/* Order Items */}
+                  <Grid container spacing={2} sx={{ mb: 2 }}>
+                    {(order.items || []).map((item) => (
+                      <Grid item xs={12} sm={6} md={3} key={item.id}>
+                        <Box sx={{ display: 'flex', gap: 1.5 }}>
+                          <Box
+                            sx={{
+                              width: 60,
+                              height: 80,
+                              bgcolor: '#f0f0f0',
+                              borderRadius: 1,
+                              overflow: 'hidden',
+                              flexShrink: 0
+                            }}
+                          >
+                            <img
+                              src={item.bookCoverUrl}
+                              alt={item.bookTitle}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                              {item.bookTitle}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              x{item.quantity}
+                            </Typography>
+                            <Typography variant="body2" color="primary.main" sx={{ fontWeight: 'bold' }}>
+                              {formatPrice(item.price)}
+                            </Typography>
+                          </Box>
                         </Box>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                            {item.bookTitle}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            x{item.quantity}
-                          </Typography>
-                          <Typography variant="body2" color="primary.main" sx={{ fontWeight: 'bold' }}>
-                            {formatPrice(item.price)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
+                      </Grid>
+                    ))}
+                  </Grid>
 
-                {/* Order Footer */}
-                <Box sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  pt: 2,
-                  borderTop: '1px solid #e0e0e0'
-                }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Tổng tiền
-                    </Typography>
-                    <Typography variant="h6" color="primary.main" sx={{ fontWeight: 'bold' }}>
-                      {formatPrice(calculateTotal(order))}
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    startIcon={<VisibilityOutlinedIcon />}
-                    onClick={() => navigate(`/my-orders/${order.id}`)}
-                  >
+                  {/* Order Footer */}
+                  <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    pt: 2,
+                    borderTop: '1px solid #e0e0e0'
+                  }}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        Tổng tiền
+                      </Typography>
+                      <Typography variant="h6" color="primary.main" sx={{ fontWeight: 'bold' }}>
+                        {formatPrice(calculateTotal(order))}
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      startIcon={<VisibilityOutlinedIcon />}
+                      onClick={() => navigate(`/my-orders/${order.id}`)}
+                    >
                     Xem chi tiết
-                  </Button>
-                </Box>
+                    </Button>
+                  </Box>
                 </Paper>
               )
             })}

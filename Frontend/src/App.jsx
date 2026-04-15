@@ -8,6 +8,8 @@ import Footer from './components/Footer/Footer'
 import Login from './pages/Login/Login'
 import Register from './pages/Register/Register'
 import VerifyEmail from './pages/VerifyEmail/VerifyEmail'
+import ForgotPassword from './pages/ForgotPassword/ForgotPassword'
+import ResetPassword from './pages/ResetPassword/ResetPassword'
 import ListBook from './pages/ListBook/ListBook'
 import BookDetail from './pages/ListBook/BookDetail/BookDetail'
 import Cart from './pages/Cart/Cart'
@@ -30,6 +32,7 @@ import OrderDetail from './pages/Admin/OrderDetail'
 import UsersManagement from './pages/Admin/UsersManagement'
 import AddUser from './pages/Admin/AddUser'
 import EditUser from './pages/Admin/EditUser'
+import ReviewsManagement from './pages/Admin/ReviewsManagement'
 import DiscountCodesManagement from './pages/Admin/DiscountCodesManagement'
 import InterfaceManagement from './pages/Admin/InterfaceManagement'
 import authService from './apis/authService'
@@ -194,6 +197,26 @@ function App() {
 
         <Route path="/verify-email" element={<VerifyEmail />} />
 
+        <Route path="/forgot-password" element={
+          <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <Header />
+            <Box sx={{ flexGrow: 1 }}>
+              <ForgotPassword />
+            </Box>
+            <Footer />
+          </Box>
+        } />
+
+        <Route path="/reset-password" element={
+          <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <Header />
+            <Box sx={{ flexGrow: 1 }}>
+              <ResetPassword />
+            </Box>
+            <Footer />
+          </Box>
+        } />
+
         {/* Admin Routes - Protected */}
         <Route path="/admin" element={
           <ProtectedAdminRoute>
@@ -210,6 +233,7 @@ function App() {
           <Route path="users" element={<UsersManagement />} />
           <Route path="users/add" element={<AddUser />} />
           <Route path="users/edit/:id" element={<EditUser />} />
+          <Route path="reviews" element={<ReviewsManagement />} />
           <Route path="discount-codes" element={<DiscountCodesManagement />} />
           <Route path="interface" element={<InterfaceManagement />} />
           <Route path="interface/homepage" element={<Navigate to="/admin/interface" replace />} />

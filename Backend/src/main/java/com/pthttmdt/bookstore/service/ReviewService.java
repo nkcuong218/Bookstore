@@ -130,6 +130,27 @@ public class ReviewService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ReviewDto.ReviewResponse> getAllReviewsForAdmin() {
+        return reviewRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(ReviewDto.ReviewResponse::fromEntity)
+                .toList();
+    }
+
+    @Transactional
+    public void deleteReviewByAdmin(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đánh giá!"));
+
+        Long bookId = review.getBook() != null ? review.getBook().getId() : null;
+        reviewRepository.delete(review);
+
+        if (bookId != null) {
+            syncBookRating(bookId);
+        }
+    }
+
     private void syncBookRating(Long bookId) {
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sách!"));

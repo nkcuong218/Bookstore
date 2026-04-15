@@ -195,7 +195,7 @@ const OrderDetailUser = () => {
               Quay lại
             </Button>
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-              Đơn hàng #{orderData.orderCode || orderData.id}
+              Chi tiết đơn hàng
             </Typography>
           </Box>
           <Chip

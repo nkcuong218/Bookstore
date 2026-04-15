@@ -97,15 +97,6 @@ const Dashboard = () => {
                     <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
                       {stat.value}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <TrendingUpIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                      <Typography variant="body2" color="success.main" sx={{ fontWeight: 'bold' }}>
-                        {stat.change}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        so với tháng trước
-                      </Typography>
-                    </Box>
                   </Box>
                   <Box sx={{ color: stat.color }}>
                     {stat.icon}

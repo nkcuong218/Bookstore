@@ -40,6 +40,10 @@ public class User {
 
     private LocalDateTime emailVerificationExpiresAt;
 
+    private String passwordResetToken;
+
+    private LocalDateTime passwordResetExpiresAt;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 

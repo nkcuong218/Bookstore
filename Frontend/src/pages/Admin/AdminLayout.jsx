@@ -6,6 +6,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import PeopleIcon from '@mui/icons-material/People'
 import LocalOfferIcon from '@mui/icons-material/LocalOffer'
+import RateReviewIcon from '@mui/icons-material/RateReview'
 import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize'
@@ -39,6 +40,7 @@ const AdminLayout = () => {
     { text: 'Quản lý sách', icon: <MenuBookIcon />, path: '/admin/books' },
     { text: 'Quản lý đơn hàng', icon: <ShoppingCartIcon />, path: '/admin/orders' },
     { text: 'Quản lý người dùng', icon: <PeopleIcon />, path: '/admin/users' },
+    { text: 'Quản lý đánh giá', icon: <RateReviewIcon />, path: '/admin/reviews' },
     { text: 'Mã giảm giá', icon: <LocalOfferIcon />, path: '/admin/discount-codes' },
     { text: 'Quản lý giao diện', icon: <DashboardCustomizeIcon />, path: '/admin/interface' }
   ]

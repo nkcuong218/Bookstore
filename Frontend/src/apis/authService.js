@@ -88,6 +88,14 @@ const authService = {
     return apiClient.get(`/api/auth/verify-email?token=${encodeURIComponent(token)}`, { skipAuth: true })
   },
 
+  forgotPassword: async (email) => {
+    return apiClient.post('/api/auth/forgot-password', { email }, { skipAuth: true })
+  },
+
+  resetPassword: async ({ token, newPassword }) => {
+    return apiClient.post('/api/auth/reset-password', { token, newPassword }, { skipAuth: true })
+  },
+
   /**
    * Đăng xuất
    */

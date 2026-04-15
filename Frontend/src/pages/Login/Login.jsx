@@ -172,6 +172,14 @@ const Login = ({ portal = 'customer' }) => {
             </Button>
 
             {authScope === 'customer' && (
+              <Typography variant="body2" sx={{ textAlign: 'right', mt: -1 }}>
+                <Link to="/forgot-password" style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 600 }}>
+                  Quên mật khẩu?
+                </Link>
+              </Typography>
+            )}
+
+            {authScope === 'customer' && (
               <>
                 <Divider>hoặc</Divider>
                 {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
